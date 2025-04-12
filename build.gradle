@@ -7,16 +7,7 @@ plugins {
 }
 
 group 'com.phanduy.aliexscrap'
-version '1.1'
-
-jar {
-  manifest {
-    attributes(
-            'Implementation-Title': project.name,
-            'Implementation-Version': project.version
-    )
-  }
-}
+version '1.0'
 
 task createProperties(dependsOn: processResources) {
   doLast {
@@ -33,8 +24,6 @@ classes {
   dependsOn createProperties
 }
 
-
-
 repositories {
   mavenCentral()
 }
@@ -48,14 +37,6 @@ targetCompatibility = '17'
 
 tasks.withType(JavaCompile) {
   options.encoding = 'UTF-8'
-}
-
-processResources {
-  filesMatching('**/app.properties') {
-    filter {
-      it.replace('%APP_VERSION_TOKEN%', version)
-    }
-  }
 }
 
 
@@ -74,18 +55,6 @@ javafx {
 }
 
 dependencies {
-//  implementation('org.controlsfx:controlsfx:11.2.1')
-//  implementation('com.dlsc.formsfx:formsfx-core:11.6.0') {
-//    exclude(group: 'org.openjfx')
-//  }
-//  implementation('net.synedra:validatorfx:0.5.0') {
-//    exclude(group: 'org.openjfx')
-//  }
-//  implementation('org.kordamp.ikonli:ikonli-javafx:12.3.1')
-//  implementation('eu.hansolo:tilesfx:21.0.3') {
-//    exclude(group: 'org.openjfx')
-//  }
-
   implementation("org.openjfx:javafx-controls:17.0.10")
   implementation("org.openjfx:javafx-fxml:17.0.10")
   implementation("org.openjfx:javafx-web:17.0.10")

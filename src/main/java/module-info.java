@@ -29,6 +29,8 @@ module com.phanduy.aliexscrap.aliexscrapper {
     requires java.xml.bind;
     requires java.prefs;
     requires java.logging;
+    requires annotations;
+    requires gson;
 
 
     // Cho phép các package bên ngoài dùng FXML controller của bạn (nếu có)

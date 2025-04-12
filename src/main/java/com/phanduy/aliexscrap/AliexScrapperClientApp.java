@@ -18,7 +18,7 @@ public class AliexScrapperClientApp extends Application {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/phanduy/aliexscrap/HomePanel.fxml"));
         Parent root = loader.load();
 
-        primaryStage.setTitle("Aliexpress Scrap to Amazon - version " + VersionUtils.getAppVersionFromResource());
+        primaryStage.setTitle("Aliexpress Scraper - version " + VersionUtils.getAppVersionFromResource());
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/image/aliexscrap.png")));
         primaryStage.setScene(new Scene(root, 500, 350));
         primaryStage.setResizable(false);

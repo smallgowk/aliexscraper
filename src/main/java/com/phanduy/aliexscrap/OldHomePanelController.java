@@ -204,56 +204,31 @@ public class OldHomePanelController {
 
     @FXML
     private void onCrawlClick() {
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("onCrawlClick invoked!\n");
-        } catch (Exception e) {}
-
         if (processCrawlThread != null && !processCrawlThread.isStop) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("Stopping previous thread\n");
-            } catch (Exception e) {}
             processCrawlThread.doStop();
             return;
         }
 
         String configFile = configFileField.getText();
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("configFileField: " + configFile + "\n");
-        } catch (Exception e) {}
         if (StringUtils.isEmpty(configFile)) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("Config file not selected!\n");
-            } catch (Exception e) {}
             AlertUtil.showError("", "Config file not selected!");
             return;
         }
 
         File checkFile = new File(configFile);
         if (!checkFile.exists()) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("Config file does not exist!\n");
-            } catch (Exception e) {}
             AlertUtil.showError("", "Config file does not exist!");
             return;
         }
 
         String templateFilePath = amzProductTemplate1Field.getText();
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("amzProductTemplate1Field: " + templateFilePath + "\n");
-        } catch (Exception e) {}
         if (StringUtils.isEmpty(templateFilePath)) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("Amazon template not selected!\n");
-            } catch (Exception e) {}
             AlertUtil.showError("", "Amazon template not selected!");
             return;
         }
 
         checkFile = new File(templateFilePath);
         if (!checkFile.exists()) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("Template file does not exist!\n");
-            } catch (Exception e) {}
             AlertUtil.showError("", "Template file does not exist!");
             return;
         }
@@ -261,13 +236,7 @@ public class OldHomePanelController {
         Configs.excelSampleFilePath = templateFilePath;
 
         String output = FileOpener.getFileNameWithoutExtension(outputField.getText());
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("outputField: " + outputField.getText() + ", output: " + output + "\n");
-        } catch (Exception e) {}
         if (StringUtils.isEmpty(output)) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("Output folder not selected!\n");
-            } catch (Exception e) {}
             AlertUtil.showError("", "Output folder not selected!");
             return;
         }
@@ -275,17 +244,11 @@ public class OldHomePanelController {
         Configs.TOOL_DATA_PATH = outputField.getText();
         Configs.updateDataPath();
 
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("Start reading inputDataConfig\n");
-        } catch (Exception e) {}
         InputDataConfig inputDataConfig = null;
         try {
             inputDataConfig = SnakeReadOrderInfoSvs.getInstance().readStoreOrderLinks(configFileField.getText());
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("Read inputDataConfig successfully\n");
-            } catch (Exception e) {}
         } catch (Exception ex) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+            try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
                 fw.write("Exception while reading inputDataConfig: " + ex.toString() + "\n");
                 for (StackTraceElement ste : ex.getStackTrace()) {
                     fw.write("    at " + ste.toString() + "\n");
@@ -294,16 +257,9 @@ public class OldHomePanelController {
             AlertUtil.showError("", "Error reading config file!");
             return;
         }
-
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("updateAllStores with listStores: " + (inputDataConfig != null && inputDataConfig.listStores != null ? inputDataConfig.listStores.size() : "null") + "\n");
-        } catch (Exception e) {}
         DataUtils.updateAllStores(inputDataConfig.listStores);
 
         boolean isOldTemplate = ExcelUtils.isOldTemplate(templateFilePath);
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("isOldTemplate: " + isOldTemplate + "\n");
-        } catch (Exception e) {}
         if (isOldTemplate) {
             inputDataConfig.params.put("template", "");
         } else {
@@ -311,49 +267,31 @@ public class OldHomePanelController {
         }
 
         if (processCrawlThread != null) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("Stopping previous processCrawlThread\n");
-            } catch (Exception e) {}
             processCrawlThread.doStop();
         }
 
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("Before casting: " + (inputDataConfig.listStores != null && !inputDataConfig.listStores.isEmpty() ? inputDataConfig.listStores.get(0).getClass().getName() : "null") + "\n");
-        } catch (Exception e) {}
         BaseStoreOrderInfo storeOrderInfo = null;
         try {
             storeOrderInfo = inputDataConfig.listStores.get(0);
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("After casting to SnakeBaseStoreOrderInfo\n");
-            } catch (Exception e) {}
         } catch (Exception ex) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("Exception when casting to SnakeBaseStoreOrderInfo: " + ex.toString() + "\n");
+            try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
+                fw.write("Exception when getting storeOrderInfo: " + ex.toString() + "\n");
                 for (StackTraceElement ste : ex.getStackTrace()) {
                     fw.write("    at " + ste.toString() + "\n");
                 }
             } catch (Exception e) {}
-            AlertUtil.showError("", "Error casting to SnakeBaseStoreOrderInfo!");
+            AlertUtil.showError("", "Error getting storeOrderInfo!");
             return;
         }
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("Preparing to create ProcessCrawlRapidNoCrawlThread (after cast)\n");
-        } catch (Exception e) {}
         try {
             processCrawlThread = new ProcessCrawlRapidNoCrawlThread(
                     storeOrderInfo,
                     inputDataConfig.params,
                     crawlProcessListener
             );
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("Thread crawl created successfully, about to start\n");
-            } catch (Exception e) {}
             processCrawlThread.start();
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("Called start() on thread crawl\n");
-            } catch (Exception e) {}
         } catch (Exception ex) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+            try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
                 fw.write("Exception when creating or starting thread crawl: " + ex.toString() + "\n");
                 for (StackTraceElement ste : ex.getStackTrace()) {
                     fw.write("    at " + ste.toString() + "\n");

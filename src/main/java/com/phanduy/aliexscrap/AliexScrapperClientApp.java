@@ -39,7 +39,7 @@ public class AliexScrapperClientApp extends Application {
 
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+            try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
                 fw.write("Uncaught exception in thread " + t.getName() + ": " + e + "\n");
                 for (StackTraceElement ste : e.getStackTrace()) {
                     fw.write("    at " + ste.toString() + "\n");

@@ -57,12 +57,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             HashMap<String, String> toolParams,
             CrawlProcessListener crawlProcessListener
     ) {
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("Entered ProcessCrawlRapidNoCrawlThread constructor\n");
-            fw.write("baseStoreOrderInfo: " + (baseStoreOrderInfo == null ? "null" : baseStoreOrderInfo.getClass().getName()) + "\n");
-            fw.write("toolParams: " + (toolParams == null ? "null" : toolParams.toString()) + "\n");
-            fw.write("crawlProcessListener: " + (crawlProcessListener == null ? "null" : crawlProcessListener.getClass().getName()) + "\n");
-        } catch (Exception e) {}
         try {
             this.baseStoreOrderInfo = baseStoreOrderInfo;
             this.toolParams = toolParams;
@@ -72,7 +66,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             apiService = ApiClient.getClient().create(ApiService.class);
             apiServiceNoLog = ApiClient.getClientNoLog().create(ApiService.class);
         } catch (Exception ex) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+            try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
                 fw.write("Exception in ProcessCrawlRapidNoCrawlThread constructor: " + ex.toString() + "\n");
                 for (StackTraceElement ste : ex.getStackTrace()) {
                     fw.write("    at " + ste.toString() + "\n");
@@ -109,23 +103,16 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 
     @Override
     public void run() {
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("[Thread] run() bắt đầu\n");
-        } catch (Exception e) {}
         try {
             successCount = 0;
             totalCount = 0;
             isHasShip = false;
-            System.out.println("=================");
             CheckConfigsReq checkConfigsReq = new CheckConfigsReq();
             checkConfigsReq.configs = toolParams;
             ConfigInfo configInfo = ApiCall.getInstance().getConfig(checkConfigsReq);
 
             if (configInfo == null) {
                 isStop = true;
-                try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                    fw.write("[Thread] configInfo null, thoát\n");
-                } catch (Exception e) {}
                 DialogUtil.showInfoMessage(null, "Lỗi hệ thống! Vui lòng kiểm tra kết nối mạng hoặc báo người quản trị!");
                 crawlProcessListener.onExit();
                 return;
@@ -137,21 +124,12 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             String computerSerial = ComputerIdentifier.getDiskSerialNumber().replaceAll(" ", "-");
 
             if (StringUtils.isEmpty(aliexStoreInfo.query)) {
-                try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                    fw.write("[Thread] Gọi processStore\n");
-                } catch (Exception e) {}
                 processStore(aliexStoreInfo, computerSerial);
             } else {
-                try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                    fw.write("[Thread] Gọi processQuery\n");
-                } catch (Exception e) {}
                 processQuery(aliexStoreInfo, computerSerial);
             }
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("[Thread] run() completed\n");
-            } catch (Exception e) {}
         } catch (Exception ex) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+            try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
                 fw.write("[Thread] Exception: " + ex.toString() + "\n");
                 for (StackTraceElement ste : ex.getStackTrace()) {
                     fw.write("    at " + ste.toString() + "\n");
@@ -162,15 +140,11 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
     }
 
     public void processQuery(AliexStoreInfo aliexStoreInfo, String computerSerial) {
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("[Thread] processQuery bắt đầu\n");
-        } catch (Exception e) {}
         try {
             Gson gson = new Gson();
             crawlProcessListener.onStartProcess(aliexStoreInfo.getStoreSign(), aliexStoreInfo.info);
             long start = System.currentTimeMillis();
             crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting aliex store info...");
-            System.out.println("Getting aliex store info...");
             processStoreInfoSvs.processStoreInfo(aliexStoreInfo);
             crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting product info...");
             SearchRapidReq searchRapidReq = new SearchRapidReq(
@@ -184,16 +158,12 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             GetPageRapidData getPageRapidData = ApiCall.getInstance().searchPageData(searchRapidReq);
             int page = 1;
             while (getPageRapidData != null && getPageRapidData.items != null && !getPageRapidData.items.isEmpty()) {
-                System.out.println("successCount: " + successCount + "/" + totalCount);
                 getPageRapidData = processSearchData(aliexStoreInfo.query, computerSerial, getPageRapidData, aliexStoreInfo, page++);
             }
             crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Done (" + successCount + "/" + totalCount + ")");
             crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("[Thread] processQuery completed\n");
-            } catch (Exception e) {}
         } catch (Exception ex) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+            try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
                 fw.write("[Thread] processQuery Exception: " + ex.toString() + "\n");
                 for (StackTraceElement ste : ex.getStackTrace()) {
                     fw.write("    at " + ste.toString() + "\n");
@@ -204,9 +174,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
     }
 
     public void processStore(AliexStoreInfo aliexStoreInfo, String computerSerial) {
-        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-            fw.write("[Thread] processStore bắt đầu\n");
-        } catch (Exception e) {}
         try {
             Gson gson = new Gson();
             String sellerId = null;
@@ -222,9 +189,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 DialogUtil.showInfoMessage(null, "Không xác định được thông tin seller!");
                 crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
                 crawlProcessListener.onExit();
-                try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                    fw.write("[Thread] processStore: data null, thoát\n");
-                } catch (Exception e) {}
                 return;
             } else {
                 sellerId = data.sellerId;
@@ -232,12 +196,10 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 aliexStoreInfo.setInfo("Store: " + data.storeId + "             Seller: " + sellerId);
                 baseStoreOrderInfo.setStoreId(data.storeId);
                 DataUtils.updateStoreByProductId(baseStoreOrderInfo);
-                System.out.println("SellerId by api: " + sellerId);
             }
             crawlProcessListener.onStartProcess(aliexStoreInfo.getStoreSign(), aliexStoreInfo.info);
             long start = System.currentTimeMillis();
             crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting aliex store info...");
-            System.out.println("Getting aliex store info...");
             processStoreInfoSvs.processStoreInfo(aliexStoreInfo);
             crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting product info...");
             GetPageDataRapidDataReq getPageDataRapidDataReq = new GetPageDataRapidDataReq(
@@ -250,12 +212,9 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                     1
             );
             GetPageRapidData getPageRapidData = ApiCall.getInstance().getPageData(getPageDataRapidDataReq);
-            System.out.println("Page request: " + gson.toJson(getPageDataRapidDataReq));
-            System.out.println("Page res: " + gson.toJson(getPageRapidData));
             int page = 1;
             aliexStoreInfo.totalPage = getPageRapidData.totalPages;
             while (page <= aliexStoreInfo.totalPage) {
-                System.out.println("successCount: " + successCount + "/" + totalCount);
                 if (StringUtils.isEmpty(Configs.template)) {
                     getPageRapidData = processOldFlow(sellerId, computerSerial, getPageRapidData, aliexStoreInfo, page++);
                 } else {
@@ -264,11 +223,8 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             }
             crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Done (" + successCount + "/" + totalCount + ")");
             crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
-                fw.write("[Thread] processStore completed\n");
-            } catch (Exception e) {}
         } catch (Exception ex) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+            try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
                 fw.write("[Thread] processStore Exception: " + ex.toString() + "\n");
                 for (StackTraceElement ste : ex.getStackTrace()) {
                     fw.write("    at " + ste.toString() + "\n");

@@ -5,7 +5,6 @@
  */
 package com.models.aliex;
 
-import com.models.aliex.crawl.AliexScriptSpecProp;
 
 /**
  *
@@ -24,11 +23,6 @@ public class ProductAttribute {
     public String valueId;
 
     public ProductAttribute() {
-    }
-    
-    public ProductAttribute(AliexScriptSpecProp aliexScriptSpecProp) {
-        this.name = aliexScriptSpecProp.attrName;
-        this.value = aliexScriptSpecProp.attrValue;
     }
 
     public String getName() {

@@ -1,6 +1,5 @@
 package com.phanduy.aliexscrap;
 
-import com.phanduy.aliexscrap.utils.AliexScraper;
 import com.phanduy.aliexscrap.utils.ThreadManager;
 import com.phanduy.aliexscrap.utils.VersionUtils;
 import javafx.application.Application;
@@ -33,13 +32,28 @@ public class AliexScrapperClientApp extends Application {
 
         primaryStage.setOnCloseRequest(event -> {
             ThreadManager.getInstance().shutdown();
-            AliexScraper.getInstance().quit();
             Platform.exit();
             System.exit(0);
         });
     }
 
     public static void main(String[] args) {
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+                fw.write("Uncaught exception in thread " + t.getName() + ": " + e + "\n");
+                for (StackTraceElement ste : e.getStackTrace()) {
+                    fw.write("    at " + ste.toString() + "\n");
+                }
+                Throwable cause = e.getCause();
+                while (cause != null) {
+                    fw.write("Caused by: " + cause + "\n");
+                    for (StackTraceElement ste : cause.getStackTrace()) {
+                        fw.write("    at " + ste.toString() + "\n");
+                    }
+                    cause = cause.getCause();
+                }
+            } catch (Exception ex) {}
+        });
         launch(AliexScrapperClientApp.class, args);
     }
 

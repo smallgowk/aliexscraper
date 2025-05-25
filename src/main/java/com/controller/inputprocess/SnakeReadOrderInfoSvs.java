@@ -7,7 +7,6 @@ package com.controller.inputprocess;
 
 import com.config.Configs;
 import com.models.aliex.store.inputdata.BaseStoreOrderInfo;
-import com.models.aliex.store.inputdata.SnakeBaseStoreOrderInfo;
 import com.utils.StringUtils;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
@@ -104,7 +103,7 @@ public class SnakeReadOrderInfoSvs extends ReadStoreOrderInfoSvs{
             return null;
         }
 
-        SnakeBaseStoreOrderInfo baseStoreOrderInfo = new SnakeBaseStoreOrderInfo();
+        BaseStoreOrderInfo baseStoreOrderInfo = new BaseStoreOrderInfo();
 
         if (link != null) {
             baseStoreOrderInfo.setLink(link.trim());

@@ -6,10 +6,10 @@
 package com.controller.inputprocess;
 
 import com.config.Configs;
+import com.models.aliex.store.inputdata.BaseStoreOrderInfo;
 import com.models.amazon.BTGManager;
 import com.models.amazon.BTGNode;
 import com.models.aliex.store.AliexStoreInfo;
-import com.models.aliex.store.inputdata.SnakeBaseStoreOrderInfo;
 import com.utils.ExcelUtils;
 import com.utils.StringUtils;
 import java.util.ArrayList;
@@ -31,7 +31,7 @@ public class TransformStoreInput {
         return aliexStoreTransformSvs;
     }
 
-    public AliexStoreInfo transformRawData(SnakeBaseStoreOrderInfo snakeStoreOrderInfo) {
+    public AliexStoreInfo transformRawData(BaseStoreOrderInfo snakeStoreOrderInfo) {
         if (snakeStoreOrderInfo == null) {
             return null;
         }

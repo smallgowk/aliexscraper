@@ -6,103 +6,13 @@
 package com.utils;
 
 import java.net.URI;
-import java.util.HashMap;
 import java.util.regex.Pattern;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.safety.Whitelist;
-import org.jsoup.select.Elements;
 
 /**
  *
  * @author Admin
  */
 public class MarketUtil {
-
-    public static String removeImgSrc(String html, HashMap<String, Boolean> hashMapTradeMark) {
-
-        Whitelist myCustomWhitelist = new Whitelist();
-//        myCustomWhitelist.addTags("b", "br", "p", "ul", "div", "li", "strong", "table", "border", "tbody", "tr", "td");
-        myCustomWhitelist.addTags("b", "br", "p", "ul", "div", "li", "strong", "border", "tbody", "span");
-
-        String clean = Jsoup.clean(html, myCustomWhitelist);
-
-        clean = clean.replaceAll("\\<\\/div\\>", "\\<\\/p\\>");
-        clean = clean.replaceAll("\\<div\\>", "\\<p\\>");
-        clean = clean.replaceAll("\\<\\/span", "\\<\\/p");
-        clean = clean.replaceAll("\\<span\\>", "\\<p\\>");
-
-        Document doc = Jsoup.parse(clean);
-//        Elements tables = doc.select("table");
-//        if (tables != null && !tables.isEmpty()) {
-//            for (Element element : tables) {
-//                element.attr("border", "1");
-//            }
-//
-//            if (doc.body().html().length() <= 2000) {
-//                return doc.body().html();
-//            } else {
-//                for (Element element : tables) {
-//                    element.remove();
-//                }
-//            }
-//        }
-
-        Elements allP = doc.select("p");
-        StringBuilder sb = new StringBuilder();
-
-        if (allP != null) {
-            String prevText = null;
-            for (Element element : allP) {
-
-                String text = element.text();
-
-                if (text != null) {
-                    text = text.trim();
-                }
-
-                if (text == null || text.isEmpty()) {
-                    continue;
-                }
-
-//                if (text.length() == 1 && (int) (text.charAt(0)) == 160 && (text.equals(prevText) || prevText == null)) {
-                if (text.length() == 1 && (int) (text.charAt(0)) == 160) {
-                    continue;
-                }
-
-                prevText = text;
-
-                text = StringUtils.removeTradeMark(text, hashMapTradeMark);
-
-                if (text == null) {
-                    return null;
-                }
-
-                element.text(text);
-
-                String appendStr = element.outerHtml() + "\n";
-//                appendStr = StringUtils.removeTradeMark(appendStr, hashMapTradeMark);
-//                String appendStr = element.outerHtml();
-//                if (text.length() != prevText.length()) {
-//                    System.out.println("Changed: " + prevText + " \nto: " + text);
-//                    System.out.println("Outer html: " + appendStr);
-//                }
-
-                if (sb.length() + appendStr.length() > 2000) {
-                    break;
-                } else {
-                    sb.append(appendStr);
-                }
-
-            }
-
-            return sb.toString();
-        } else {
-            return null;
-        }
-    }
-
     public static String processImgUrl(String url) {
 
         URI uri = URI.create(url);

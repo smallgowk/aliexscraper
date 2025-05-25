@@ -9,12 +9,12 @@ import com.config.Configs;
 import com.interfaces.CrawlProcessListener;
 import com.models.aliex.store.AliexPageInfo;
 import com.models.aliex.store.AliexStoreInfo;
-import com.models.aliex.store.inputdata.SnakeBaseStoreOrderInfo;
 import com.controller.inputprocess.TransformStoreInput;
 import com.controller.CacheSvs;
 import com.controller.transform.ProcessPageDataSvs;
 import com.controller.transform.ProcessStoreInfoSvs;
 import com.google.gson.Gson;
+import com.models.aliex.store.inputdata.BaseStoreOrderInfo;
 import com.models.request.CheckConfigsReq;
 import com.models.request.GetPageDataRapidDataReq;
 import com.models.request.SearchRapidReq;
@@ -44,7 +44,7 @@ import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
  */
 public class ProcessCrawlRapidNoCrawlThread extends Thread {
 
-    SnakeBaseStoreOrderInfo baseStoreOrderInfo;
+    BaseStoreOrderInfo baseStoreOrderInfo;
     HashMap<String, String> toolParams;
     CrawlProcessListener crawlProcessListener;
     ProcessStoreInfoSvs processStoreInfoSvs;
@@ -53,17 +53,33 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 
 //    StringBuffer sb;
     public ProcessCrawlRapidNoCrawlThread(
-            SnakeBaseStoreOrderInfo baseStoreOrderInfo,
+            BaseStoreOrderInfo baseStoreOrderInfo,
             HashMap<String, String> toolParams,
             CrawlProcessListener crawlProcessListener
     ) {
-        this.baseStoreOrderInfo = baseStoreOrderInfo;
-        this.toolParams = toolParams;
-        this.crawlProcessListener = crawlProcessListener;
-        processStoreInfoSvs = new ProcessStoreInfoSvs();
+        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+            fw.write("Entered ProcessCrawlRapidNoCrawlThread constructor\n");
+            fw.write("baseStoreOrderInfo: " + (baseStoreOrderInfo == null ? "null" : baseStoreOrderInfo.getClass().getName()) + "\n");
+            fw.write("toolParams: " + (toolParams == null ? "null" : toolParams.toString()) + "\n");
+            fw.write("crawlProcessListener: " + (crawlProcessListener == null ? "null" : crawlProcessListener.getClass().getName()) + "\n");
+        } catch (Exception e) {}
+        try {
+            this.baseStoreOrderInfo = baseStoreOrderInfo;
+            this.toolParams = toolParams;
+            this.crawlProcessListener = crawlProcessListener;
+            processStoreInfoSvs = new ProcessStoreInfoSvs();
 
-        apiService = ApiClient.getClient().create(ApiService.class);
-        apiServiceNoLog = ApiClient.getClientNoLog().create(ApiService.class);
+            apiService = ApiClient.getClient().create(ApiService.class);
+            apiServiceNoLog = ApiClient.getClientNoLog().create(ApiService.class);
+        } catch (Exception ex) {
+            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+                fw.write("Exception in ProcessCrawlRapidNoCrawlThread constructor: " + ex.toString() + "\n");
+                for (StackTraceElement ste : ex.getStackTrace()) {
+                    fw.write("    at " + ste.toString() + "\n");
+                }
+            } catch (Exception e) {}
+            throw ex;
+        }
     }
 
     public boolean isStop = false;
@@ -93,142 +109,173 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 
     @Override
     public void run() {
-        // Transform raw data
+        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+            fw.write("[Thread] run() bắt đầu\n");
+        } catch (Exception e) {}
+        try {
+            successCount = 0;
+            totalCount = 0;
+            isHasShip = false;
+            System.out.println("=================");
+            CheckConfigsReq checkConfigsReq = new CheckConfigsReq();
+            checkConfigsReq.configs = toolParams;
+            ConfigInfo configInfo = ApiCall.getInstance().getConfig(checkConfigsReq);
 
-        successCount = 0;
-        totalCount = 0;
-        isHasShip = false;
+            if (configInfo == null) {
+                isStop = true;
+                try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+                    fw.write("[Thread] configInfo null, thoát\n");
+                } catch (Exception e) {}
+                DialogUtil.showInfoMessage(null, "Lỗi hệ thống! Vui lòng kiểm tra kết nối mạng hoặc báo người quản trị!");
+                crawlProcessListener.onExit();
+                return;
+            }
 
-//        sb = new StringBuffer();
-//        crawlProcessListener.onPushState("Processing input data...");
-//        sb.append("================= \n");
-//        sb.append("Start crawl " + baseStoreOrderInfo.storeSign);
-//        sb.append("\n");
-        System.out.println("=================");
-//        System.out.println("Start crawl " + baseStoreOrderInfo.storeSign);
-        CheckConfigsReq checkConfigsReq = new CheckConfigsReq();
-        checkConfigsReq.configs = toolParams;
-        ConfigInfo configInfo = ApiCall.getInstance().getConfig(checkConfigsReq);
+            Configs.updateConfig(configInfo);
 
-        if (configInfo == null) {
-            isStop = true;
-            DialogUtil.showInfoMessage(null, "Lỗi hệ thống! Vui lòng kiểm tra kết nối mạng hoặc báo người quản trị!");
-            crawlProcessListener.onExit();
-            return;
-        }
+            AliexStoreInfo aliexStoreInfo = TransformStoreInput.getInstance().transformRawData(baseStoreOrderInfo);
+            String computerSerial = ComputerIdentifier.getDiskSerialNumber().replaceAll(" ", "-");
 
-        Configs.updateConfig(configInfo);
-
-        AliexStoreInfo aliexStoreInfo = TransformStoreInput.getInstance().transformRawData(baseStoreOrderInfo);
-        String computerSerial = ComputerIdentifier.getDiskSerialNumber().replaceAll(" ", "-");
-
-        if (StringUtils.isEmpty(aliexStoreInfo.query)) {
-            processStore(aliexStoreInfo, computerSerial);
-        } else {
-            processQuery(aliexStoreInfo, computerSerial);
+            if (StringUtils.isEmpty(aliexStoreInfo.query)) {
+                try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+                    fw.write("[Thread] Gọi processStore\n");
+                } catch (Exception e) {}
+                processStore(aliexStoreInfo, computerSerial);
+            } else {
+                try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+                    fw.write("[Thread] Gọi processQuery\n");
+                } catch (Exception e) {}
+                processQuery(aliexStoreInfo, computerSerial);
+            }
+            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+                fw.write("[Thread] run() completed\n");
+            } catch (Exception e) {}
+        } catch (Exception ex) {
+            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+                fw.write("[Thread] Exception: " + ex.toString() + "\n");
+                for (StackTraceElement ste : ex.getStackTrace()) {
+                    fw.write("    at " + ste.toString() + "\n");
+                }
+            } catch (Exception e) {}
+            ex.printStackTrace();
         }
     }
 
     public void processQuery(AliexStoreInfo aliexStoreInfo, String computerSerial) {
-        Gson gson = new Gson();
-
-        crawlProcessListener.onStartProcess(aliexStoreInfo.getStoreSign(), aliexStoreInfo.info);
-        long start = System.currentTimeMillis();
-        crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting aliex store info...");
-        System.out.println("Getting aliex store info...");
-
-        processStoreInfoSvs.processStoreInfo(aliexStoreInfo);
-        crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting product info...");
-
-        SearchRapidReq searchRapidReq = new SearchRapidReq(
-                aliexStoreInfo.query,
-                computerSerial,
-                "USD",
-                aliexStoreInfo.region,
-                Configs.regionMap.get(aliexStoreInfo.region),
-                1
-        );
-        GetPageRapidData getPageRapidData = ApiCall.getInstance().searchPageData(searchRapidReq);
-//        System.out.println("Page request: " + gson.toJson(searchRapidReq));
-//        String url = DropUrlFactory.createSearchRapidDataUrl();
-//        SearchRapidDataResponse response = RestBase.getInstance().postTransform(url, searchRapidReq, SearchRapidDataResponse.class);
-//        GetPageRapidData getPageRapidData = response.data;
-//        System.out.println("Page res: " + gson.toJson(getPageRapidData));
-        int page = 1;
-        while (getPageRapidData != null && getPageRapidData.items != null && !getPageRapidData.items.isEmpty()) {
-            System.out.println("successCount: " + successCount + "/" + totalCount);
-            getPageRapidData = processSearchData(aliexStoreInfo.query, computerSerial, getPageRapidData, aliexStoreInfo, page++);
+        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+            fw.write("[Thread] processQuery bắt đầu\n");
+        } catch (Exception e) {}
+        try {
+            Gson gson = new Gson();
+            crawlProcessListener.onStartProcess(aliexStoreInfo.getStoreSign(), aliexStoreInfo.info);
+            long start = System.currentTimeMillis();
+            crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting aliex store info...");
+            System.out.println("Getting aliex store info...");
+            processStoreInfoSvs.processStoreInfo(aliexStoreInfo);
+            crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting product info...");
+            SearchRapidReq searchRapidReq = new SearchRapidReq(
+                    aliexStoreInfo.query,
+                    computerSerial,
+                    "USD",
+                    aliexStoreInfo.region,
+                    Configs.regionMap.get(aliexStoreInfo.region),
+                    1
+            );
+            GetPageRapidData getPageRapidData = ApiCall.getInstance().searchPageData(searchRapidReq);
+            int page = 1;
+            while (getPageRapidData != null && getPageRapidData.items != null && !getPageRapidData.items.isEmpty()) {
+                System.out.println("successCount: " + successCount + "/" + totalCount);
+                getPageRapidData = processSearchData(aliexStoreInfo.query, computerSerial, getPageRapidData, aliexStoreInfo, page++);
+            }
+            crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Done (" + successCount + "/" + totalCount + ")");
+            crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
+            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+                fw.write("[Thread] processQuery completed\n");
+            } catch (Exception e) {}
+        } catch (Exception ex) {
+            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+                fw.write("[Thread] processQuery Exception: " + ex.toString() + "\n");
+                for (StackTraceElement ste : ex.getStackTrace()) {
+                    fw.write("    at " + ste.toString() + "\n");
+                }
+            } catch (Exception e) {}
+            ex.printStackTrace();
         }
-        crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Done (" + successCount + "/" + totalCount + ")");
-        crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
     }
 
     public void processStore(AliexStoreInfo aliexStoreInfo, String computerSerial) {
-        Gson gson = new Gson();
-        String sellerId = null;
-
-        GetStoreInfoRapidDataReq getStoreInfoRapidDataReq = new GetStoreInfoRapidDataReq(
-                aliexStoreInfo.productId,
-                computerSerial,
-                "USD",
-                aliexStoreInfo.region,
-                Configs.regionMap.get(aliexStoreInfo.region)
-        );
-        GetStoreInfoRapidData data = ApiCall.getInstance().getStoreInfoRapidData(getStoreInfoRapidDataReq);
-//        System.out.println("" + gson.toJson(getStoreInfoRapidDataReq));
-//        String url = DropUrlFactory.createGetStoreInfoRapidDataUrl();
-//        System.out.println("" + url);
-//        GetStoreInfoRapidDataResponse response = RestBase.getInstance().postTransform(url, getStoreInfoRapidDataReq, GetStoreInfoRapidDataResponse.class);
-//        System.out.println("Response store: " + gson.toJson(response));
-        if (data == null) {
-            DialogUtil.showInfoMessage(null, "Không xác định được thông tin seller!");
-            crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
-            crawlProcessListener.onExit();
-            return;
-        } else {
-            sellerId = data.sellerId;
-            aliexStoreInfo.setStoreId(data.storeId);
-            aliexStoreInfo.setInfo("Store: " + data.storeId + "             Seller: " + sellerId);
-            baseStoreOrderInfo.setStoreId(data.storeId);
-            DataUtils.updateStoreByProductId(baseStoreOrderInfo);
-            System.out.println("SellerId by api: " + sellerId);
-        }
-
-        crawlProcessListener.onStartProcess(aliexStoreInfo.getStoreSign(), aliexStoreInfo.info);
-        long start = System.currentTimeMillis();
-        crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting aliex store info...");
-        System.out.println("Getting aliex store info...");
-
-        processStoreInfoSvs.processStoreInfo(aliexStoreInfo);
-        crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting product info...");
-
-        GetPageDataRapidDataReq getPageDataRapidDataReq = new GetPageDataRapidDataReq(
-                aliexStoreInfo.getStoreSign(),
-                sellerId,
-                computerSerial,
-                "USD",
-                aliexStoreInfo.region,
-                Configs.regionMap.get(aliexStoreInfo.region),
-                1
-        );
-        GetPageRapidData getPageRapidData = ApiCall.getInstance().getPageData(getPageDataRapidDataReq);
-        System.out.println("Page request: " + gson.toJson(getPageDataRapidDataReq));
-//        String url = DropUrlFactory.createGetPageRapidDataUrl();
-//        GetPageRapidDataResponse response = RestBase.getInstance().postTransform(url, getPageDataRapidDataReq, GetPageRapidDataResponse.class);
-//        GetPageRapidData getPageRapidData = response.data;
-        System.out.println("Page res: " + gson.toJson(getPageRapidData));
-        int page = 1;
-        aliexStoreInfo.totalPage = getPageRapidData.totalPages;
-        while (page <= aliexStoreInfo.totalPage) {
-            System.out.println("successCount: " + successCount + "/" + totalCount);
-            if (StringUtils.isEmpty(Configs.template)) {
-                getPageRapidData = processOldFlow(sellerId, computerSerial, getPageRapidData, aliexStoreInfo, page++);
+        try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+            fw.write("[Thread] processStore bắt đầu\n");
+        } catch (Exception e) {}
+        try {
+            Gson gson = new Gson();
+            String sellerId = null;
+            GetStoreInfoRapidDataReq getStoreInfoRapidDataReq = new GetStoreInfoRapidDataReq(
+                    aliexStoreInfo.productId,
+                    computerSerial,
+                    "USD",
+                    aliexStoreInfo.region,
+                    Configs.regionMap.get(aliexStoreInfo.region)
+            );
+            GetStoreInfoRapidData data = ApiCall.getInstance().getStoreInfoRapidData(getStoreInfoRapidDataReq);
+            if (data == null) {
+                DialogUtil.showInfoMessage(null, "Không xác định được thông tin seller!");
+                crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
+                crawlProcessListener.onExit();
+                try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+                    fw.write("[Thread] processStore: data null, thoát\n");
+                } catch (Exception e) {}
+                return;
             } else {
-                getPageRapidData = processNewFormatFlow(sellerId, computerSerial, getPageRapidData, aliexStoreInfo, page++);
+                sellerId = data.sellerId;
+                aliexStoreInfo.setStoreId(data.storeId);
+                aliexStoreInfo.setInfo("Store: " + data.storeId + "             Seller: " + sellerId);
+                baseStoreOrderInfo.setStoreId(data.storeId);
+                DataUtils.updateStoreByProductId(baseStoreOrderInfo);
+                System.out.println("SellerId by api: " + sellerId);
             }
+            crawlProcessListener.onStartProcess(aliexStoreInfo.getStoreSign(), aliexStoreInfo.info);
+            long start = System.currentTimeMillis();
+            crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting aliex store info...");
+            System.out.println("Getting aliex store info...");
+            processStoreInfoSvs.processStoreInfo(aliexStoreInfo);
+            crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting product info...");
+            GetPageDataRapidDataReq getPageDataRapidDataReq = new GetPageDataRapidDataReq(
+                    aliexStoreInfo.getStoreSign(),
+                    sellerId,
+                    computerSerial,
+                    "USD",
+                    aliexStoreInfo.region,
+                    Configs.regionMap.get(aliexStoreInfo.region),
+                    1
+            );
+            GetPageRapidData getPageRapidData = ApiCall.getInstance().getPageData(getPageDataRapidDataReq);
+            System.out.println("Page request: " + gson.toJson(getPageDataRapidDataReq));
+            System.out.println("Page res: " + gson.toJson(getPageRapidData));
+            int page = 1;
+            aliexStoreInfo.totalPage = getPageRapidData.totalPages;
+            while (page <= aliexStoreInfo.totalPage) {
+                System.out.println("successCount: " + successCount + "/" + totalCount);
+                if (StringUtils.isEmpty(Configs.template)) {
+                    getPageRapidData = processOldFlow(sellerId, computerSerial, getPageRapidData, aliexStoreInfo, page++);
+                } else {
+                    getPageRapidData = processNewFormatFlow(sellerId, computerSerial, getPageRapidData, aliexStoreInfo, page++);
+                }
+            }
+            crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Done (" + successCount + "/" + totalCount + ")");
+            crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
+            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+                fw.write("[Thread] processStore completed\n");
+            } catch (Exception e) {}
+        } catch (Exception ex) {
+            try (java.io.FileWriter fw = new java.io.FileWriter("debug.log", true)) {
+                fw.write("[Thread] processStore Exception: " + ex.toString() + "\n");
+                for (StackTraceElement ste : ex.getStackTrace()) {
+                    fw.write("    at " + ste.toString() + "\n");
+                }
+            } catch (Exception e) {}
+            ex.printStackTrace();
         }
-        crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Done (" + successCount + "/" + totalCount + ")");
-        crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
     }
 
     public GetPageRapidData processSearchData(String query, String computerSerial, GetPageRapidData getPageRapidData, AliexStoreInfo aliexStoreInfo, int page) {
@@ -331,9 +378,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 page + 1
         );
 
-//        String url = DropUrlFactory.createSearchRapidDataUrl();
-//        SearchRapidDataResponse response = RestBase.getInstance().postTransform(url, searchRapidReq, SearchRapidDataResponse.class);
-//        return response.data;
         return ApiCall.getInstance().searchPageData(searchRapidReq);
     }
 
@@ -353,12 +397,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
     }
 
     public GetPageRapidData processNewFormatFlow(String sellerId, String computerSerial, GetPageRapidData getPageRapidData, AliexStoreInfo aliexStoreInfo, int page) {
-//        if (!crawlDataPageBase.isSuccess()) {
-//            isStop = true;
-//            crawlProcessListener.onStopToLogin(aliexStoreInfo.getLink(), aliexStoreInfo.getStoreSign());
-//            return null;
-//        }
-
         if (isStop) {
             return null;
         }
@@ -374,16 +412,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             if (isStop) {
                 return null;
             }
-//            CrawlPageProductItem crawlPageProductItem = crawlDataPageBase.listProductIds.get(j);
-//            String updateTitleResult = processStoreInfoSvs.updateAliexItemTitle(crawlPageProductItem);
-//            if (updateTitleResult != null) {
-//                processStoreInfoSvs.processErrorProduct(aliexStoreInfo.getStoreSign(), page, crawlPageProductItem.getId(), updateTitleResult);
-//                crawlProcessListener.onPushState(
-//                        aliexStoreInfo.getStoreSign(),
-//                        processStoreInfoSvs.getStatus(aliexStoreInfo.getStoreSign(), page, aliexStoreInfo.totalPage, j, size)
-//                );
-//                continue;
-//            }
             String productId = getPageRapidData.items.get(j);
             TransformCrawlResponse res = CacheSvs.getInstance().getProductResFromCache(productId, keyCache);
             if (res == null) {
@@ -412,39 +440,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                     }
                     processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, e.getMessage());
                 }
-//                String url = DropUrlFactory.createTransformRapidNewFormat();
-//                TransformResponse response = RestBase.getInstance().postTransform(url, transformRapidDataReq, TransformResponse.class);
-//                if (response != null) {
-//                    if (response.status == 200) {
-//                        isHasShip = true;
-//                        CacheSvs.getInstance().saveProductInfo(response.getData(), keyCache);
-//                        response.getData().updateImageDownloads();
-//                        listResults.add(response.getData());
-//                        successCount++;
-//                    } else {
-//                        CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
-//                        if (response.status == 401) {
-//                            System.out.println("Invalid authen");
-//                            DialogUtil.showInfoMessage(null, "Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
-//                            crawlProcessListener.onExit();
-//                            return null;
-//                        } else {
-//                            if (Configs.isStopByNoShipping && page == 1 && j == 9 && !isHasShip) {
-//                                DialogUtil.showInfoMessage(null, "Store có nhiều sản phẩm không có ship. Tool sẽ dừng crawl store này để tiết kiệm request!");
-//                                crawlProcessListener.onExit();
-//                                return null;
-//                            }
-//                            processStoreInfoSvs.processErrorProducts(response, aliexStoreInfo.getStoreSign(), page);
-//                        }
-//                    }
-//                } else {
-//                    CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
-//                    crawlProcessListener.onPushState(
-//                            aliexStoreInfo.getStoreSign(),
-//                            processStoreInfoSvs.getStatus(aliexStoreInfo.getStoreSign(), page, aliexStoreInfo.totalPage, j, size)
-//                    );
-//                    System.out.println(productId + ": tranform fail " + page);
-//                }
             } else {
                 if (res.hasData()) {
                     successCount++;
@@ -473,15 +468,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             java.util.logging.Logger.getLogger(ProcessPageDataSvs.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-//            if (crawlCount > 0) {
-//                SendLogInfoReq sendLogInfoReq = new SendLogInfoReq();
-//                sendLogInfoReq.setComputerSerial(computerSerial);
-//                sendLogInfoReq.setStoreUrl(storeUrl);
-//                sendLogInfoReq.setProductCount(crawlCount);
-//                sendLogInfoReq.setPageIndex(page);
-//                String url = DropUrlFactory.createLogUrl();
-//                RestBase.getInstance().postCommon(url, sendLogInfoReq, TransformResponse.class);
-//            }
         crawlProcessListener.onPushState(
                 aliexStoreInfo.getStoreSign(),
                 processStoreInfoSvs.getStatusWithFixedPercent(aliexStoreInfo.getStoreSign(), page, aliexStoreInfo.totalPage, 100, size)
@@ -498,13 +484,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                     Configs.regionMap.get(aliexStoreInfo.region),
                     page + 1
             );
-//            String url = DropUrlFactory.createGetPageRapidDataUrl();
-//            GetPageRapidDataResponse response = RestBase.getInstance().postTransform(url, getPageDataRapidDataReq, GetPageRapidDataResponse.class);
-//            if (response != null) {
-//                return response.data;
-//            } else {
-//                System.out.println("Get not get data for page: " + (page + 1));
-//            }
             return ApiCall.getInstance().getPageData(getPageDataRapidDataReq);
         } else {
             return null;
@@ -533,15 +512,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 return null;
             }
             String productId = getPageRapidData.items.get(j);
-//            String updateTitleResult = processStoreInfoSvs.updateAliexItemTitle(crawlPageProductItem);
-//            if (updateTitleResult != null) {
-//                processStoreInfoSvs.processErrorProduct(aliexStoreInfo.getStoreSign(), page, crawlPageProductItem.getId(), updateTitleResult);
-//                crawlProcessListener.onPushState(
-//                        aliexStoreInfo.getStoreSign(),
-//                        processStoreInfoSvs.getStatus(aliexStoreInfo.getStoreSign(), page, aliexStoreInfo.totalPage, j, size)
-//                );
-//                continue;
-//            }
             TransformCrawlResponse res = CacheSvs.getInstance().getProductResFromCache(productId, keyCache);
             if (res == null) {
                 crawlCount++;
@@ -574,47 +544,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                     }
                     processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, e.getMessage());
                 }
-
-
-//                String url = DropUrlFactory.createTransformRapidV2();
-//                System.out.println("Product: " + productId + " " + gson.toJson(transformRapidDataReq));
-//                TransformResponse response = RestBase.getInstance().postTransform(url, transformRapidDataReq, TransformResponse.class);
-//                if (response != null) {
-//                    if (response.status == 200) {
-//                        isHasShip = true;
-//                        CacheSvs.getInstance().saveProductInfo(response.getData(), keyCache);
-//                        processStoreInfoSvs.processRapidProduct(
-//                                productId,
-//                                response.getData(),
-//                                aliexStoreInfo,
-//                                page,
-//                                aliexStoreInfo.getStoreSign()
-//                        );
-//                    } else {
-//                        CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
-//                        if (response.status == 401) {
-//                            System.out.println("Invalid authen");
-//                            DialogUtil.showInfoMessage(null, "Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
-//                            crawlProcessListener.onExit();
-//                            return null;
-//                        } else {
-//                            if (Configs.isStopByNoShipping && page == 1 && j == 9 && !isHasShip) {
-//                                DialogUtil.showInfoMessage(null, "Store có nhiều sản phẩm không có ship. Tool sẽ dừng crawl store này để tiết kiệm request!");
-//                                crawlProcessListener.onExit();
-//                                return null;
-//                            }
-//                            processStoreInfoSvs.processErrorProducts(response, aliexStoreInfo.getStoreSign(), page);
-//                        }
-//                    }
-//                } else {
-//                    CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
-//                    crawlProcessListener.onPushState(
-//                            aliexStoreInfo.getStoreSign(),
-//                            processStoreInfoSvs.getStatus(aliexStoreInfo.getStoreSign(), page, aliexStoreInfo.totalPage, j, size)
-//                    );
-//                    System.out.println(productId + ": tranform fail " + page);
-//                    continue;
-//                }
             } else {
                 if (res.hasData()) {
                     processStoreInfoSvs.processRapidProduct(
@@ -642,15 +571,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 
         processStoreInfoSvs.processPageInfo(aliexPageInfo);
 
-//            if (crawlCount > 0) {
-//                SendLogInfoReq sendLogInfoReq = new SendLogInfoReq();
-//                sendLogInfoReq.setComputerSerial(computerSerial);
-//                sendLogInfoReq.setStoreUrl(storeUrl);
-//                sendLogInfoReq.setProductCount(crawlCount);
-//                sendLogInfoReq.setPageIndex(page);
-//                String url = DropUrlFactory.createLogUrl();
-//                RestBase.getInstance().postCommon(url, sendLogInfoReq, TransformResponse.class);
-//            }
         crawlProcessListener.onPushState(
                 aliexStoreInfo.getStoreSign(),
                 processStoreInfoSvs.getStatusWithFixedPercent(aliexStoreInfo.getStoreSign(), page, aliexStoreInfo.totalPage, 100, size)
@@ -667,10 +587,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                     Configs.regionMap.get(aliexStoreInfo.region),
                     page + 1
             );
-
-//            String url = DropUrlFactory.createGetPageRapidDataUrl();
-//            GetPageRapidDataResponse response = RestBase.getInstance().postTransform(url, getPageDataRapidDataReq, GetPageRapidDataResponse.class);
-//            return response.data;
             return ApiCall.getInstance().getPageData(getPageDataRapidDataReq);
         } else {
             return null;

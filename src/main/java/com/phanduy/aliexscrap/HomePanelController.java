@@ -351,9 +351,10 @@ public class HomePanelController {
                         } else {
                             if (setting.getKeyword().isEmpty()) {
                                 startCrawlingStoreThread(setting);
-                            } else {
-                                startCrawlingKeywordThread(setting);
                             }
+//                            else {
+//                                startCrawlingKeywordThread(setting);
+//                            }
                         }
                     } else {
                         System.out.println("API Fail: " + response.getMessage());
@@ -540,22 +541,6 @@ public class HomePanelController {
         }
     }
 
-    public void startCrawlingKeywordThread(SettingInfo setting) {
-        ThreadManager.getInstance().submitTask(
-                () -> {
-                    String sellerId = AliexScraper.getInstance().crawlSellerId(setting.getStoreId());
-                }
-        );
-    }
-
-    public void startCrawlingSellerIdThread(SettingInfo setting) {
-        ThreadManager.getInstance().submitTask(
-                () -> {
-                    String sellerId = AliexScraper.getInstance().crawlSellerId(setting.getStoreId());
-                }
-        );
-    }
-
     public void startCrawlingInThread(String storeId, String productGroupId, String spm) {
         ThreadManager.getInstance().submitTask(
                 () -> crawlingProductIds(storeId, productGroupId, spm)
@@ -564,19 +549,18 @@ public class HomePanelController {
 
 
     private void crawlingProductIds(String storeId, String productGroupId, String spm) {
-        String url = AliexScraper.getInstance().buildCategoryUrl(
-                storeId,
-                productGroupId,
-                spm
-        );
-        String categoryFolder = productGroupId.isEmpty() ? storeId + "_items" : productGroupId;
-        ItemListResponse itemListResponse = AliexScraper.getInstance().crawlData(
-                storeId,
-                categoryFolder,
-                url
-        );
-
-        System.out.println("SellerId: " +  (new Gson().toJson(itemListResponse)));
+//        String url = AliexScraper.getInstance().buildCategoryUrl(
+//                storeId,
+//                productGroupId,
+//                spm
+//        );
+//        String categoryFolder = productGroupId.isEmpty() ? storeId + "_items" : productGroupId;
+//        ItemListResponse itemListResponse = AliexScraper.getInstance().crawlData(
+//                storeId,
+//                categoryFolder,
+//                url
+//        );
+//        System.out.println("SellerId: " +  (new Gson().toJson(itemListResponse)));
     }
 
     private void processStoreInfo(SettingInfo settingInfo, StoreInfoResponseData storeInfo) {

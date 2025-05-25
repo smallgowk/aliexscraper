@@ -23,9 +23,6 @@ import java.util.logging.Logger;
  */
 public class AWSUtil {
 
-    public static final String AWSAccessKeyId = "AKIAIERTU7T5QAR4Y5DQ";
-    public static final String AWSSecretKey = "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";
-
     public static final String BRAND_NAME_FILE = "GTIN_brands.txt";
     public static final String AVOID_KEYWORD_FILE = "/avoid_key_words.txt";
     private static Set<String> setGtinBrands = new HashSet<>();
@@ -182,11 +179,6 @@ public class AWSUtil {
                 + domain + "\n"
                 + context + "\n"
                 + params;
-    }
-
-    public static String createSignature(String method, String domain, String context, String params) {
-        String str = AWSUtil.createSignatureCleanData("GET", "webservices.amazon.com", "/onca/xml", "AWSAccessKeyId=AKIAIERTU7T5QAR4Y5DQ&AssociateTag=mytag-20&ItemId=0679722769&Operation=ItemLookup&ResponseGroup=Images%2CItemAttributes%2COffers%2CReviews&Service=AWSECommerceService&Timestamp=2019-01-24T12%3A00%3A00Z&Version=2019-01-24");
-        return EncryptUtil.encryptHmacSHA256(str, AWSSecretKey);
     }
 
     public static boolean isAvoidKeyword(String input) {

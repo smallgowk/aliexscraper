@@ -49,6 +49,33 @@ public class OldHomePanelController {
         prefs = Preferences.userNodeForPackage(OldHomePanelController.class);
         loadSettings();
         DownloadManager.getInstance().setListener(downloadListener);
+//        DownloadManager.getInstance().testDownload(
+//                "https://ae01.alicdn.com/kf/S1371cc3fa6474ca9b04cf15a8643b75eI/4PCS-Privacy-Screen-Protector-For-iPhone-14-Pro-Max-16-Pro-Anti-Spy-Glass-For-iPhone.jpg",
+//                    "D:\\Data\\Dropship\\Products\\Images\\Jewelry\\iphone\\3256806491907393\\1.jpg"
+//                );
+//
+//        DownloadManager.getInstance().testDownload(
+//                "https://cdn.britannica.com/69/177069-050-5F685982/Anne-Bonny-Calico-Jack-Mary-Read-crew.jpg",
+//                "D:\\Data\\Dropship\\Products\\Images\\Jewelry\\iphone\\3256806491907393\\2.jpg"
+//        );
+
+//        String imageUrl = "https://ae01.alicdn.com/kf/S1371cc3fa6474ca9b04cf15a8643b75eI/4PCS-Privacy-Screen-Protector-For-iPhone-14-Pro-Max-16-Pro-Anti-Spy-Glass-For-iPhone.jpg";
+//        String targetPath = "downloaded_image.jpg";
+//        String key = "download_001";
+//
+//        DownloadListener listener = new DownloadListener() {
+//            @Override
+//            public void onComplete(String key) {
+//                System.out.println("Download hoàn thành cho key: " + key);
+//            }
+//        };
+//
+//        ImageDownloader downloader = new ImageDownloader(imageUrl, targetPath, key, listener);
+//
+//        // Chạy trong thread mới
+//        Thread downloadThread = new Thread(downloader);
+//        downloadThread.start();
+
     }
 
     @FXML
@@ -303,7 +330,7 @@ public class OldHomePanelController {
 //        } else {
 //            lblDownloadState.setText("" + DownloadManager.getInstance().getTotalComplete() + "/" + DownloadManager.getInstance().getTotalDownload());
 //        }
-        downloadImageLabel.setText(DownloadManager.getInstance().getTotalComplete() + "/" + DownloadManager.getInstance().getTotalDownload());
+        downloadImageLabel.setText("Downloaded Images: " + DownloadManager.getInstance().getTotalComplete());
     }
 
 }

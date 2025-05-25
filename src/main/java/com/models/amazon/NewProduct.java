@@ -15,10 +15,6 @@ public class NewProduct {
     public String shippingPrice;
     public String shippingMethod;
 
-    public void setImageUrls(ArrayList<String> images) {
-
-    }
-    
     public String getImageName() {
         StringBuilder sb = new StringBuilder();
         if (!StringUtils.isEmpty(property_value_1)) {

@@ -10,15 +10,14 @@ import com.models.amazon.ProductAmz;
 import com.interfaces.DownloadListener;
 import com.models.response.TransformCrawlResponse;
 import com.utils.StringUtils;
+import org.apache.commons.io.FileUtils;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,8 +41,8 @@ public class DownloadManager {
     HashSet<String> setKey = new HashSet<>();
     HashSet<String> setKeyDone = new HashSet<>();
     
-    public int totalDownloadCount = 0;
-    public int totalDownloadComplete = 0;
+//    public int totalDownloadCount = 0;
+//    public int totalDownloadComplete = 0;
     
     public DownloadListener downloadListener;
     
@@ -81,28 +80,26 @@ public class DownloadManager {
     
     public void updateCompleteKey(String key) {
         setKeyDone.add(key);
-        totalDownloadComplete++;
     }
     
     public void updateDownloadKey(String key) {
         setKey.add(key);
-        totalDownloadCount++;
     }
     
     public int getTotalDownload() {
-        return totalDownloadCount;
+        return setKey.size();
     }
     
     public int getTotalComplete() {
-        return totalDownloadComplete;
+        return setKeyDone.size();
     }
     
     public void clearData() {
         mapUrl.clear();
         setKey.clear();
         setKeyDone.clear();
-        totalDownloadCount = 0;
-        totalDownloadComplete = 0;
+//        totalDownloadCount = 0;
+//        totalDownloadComplete = 0;
     }
     
     public void downloadImage(String field, String key, String target) {
@@ -113,8 +110,8 @@ public class DownloadManager {
             execute(new DownloadMachine(key, get(key), target, downloadListener));
             updateDownloadKey(key);
         } else {
-            totalDownloadCount++;
-            totalDownloadComplete++;
+//            totalDownloadCount++;
+//            totalDownloadComplete++;
             if (downloadListener != null) {
                 downloadListener.onComplete(key);
             }
@@ -196,91 +193,161 @@ class DownloadMachine extends Thread{
 
     @Override
     public void run() {
-        InputStream in = null;
-        HttpURLConnection connection = null;
-        ReadableByteChannel rbc = null;
-        FileChannel fileChannel = null;
-
         try {
             BufferedImage image = downloadImage(imageUrl);
             if (image == null) {
-                System.out.println("Failed to download the image file.");
-                throw new IOException("Failed to download the image file.");
+                // Nếu không download được, thử save WebP file
+                String webPPath = targetFilePath.replace(".jpg", ".webp");
+                if (downloadWebPFile(imageUrl, webPPath)) {
+                    WebPJarSolution.convertWebPToJPEG(webPPath, targetFilePath, 1.0f);
+                    FileUtils.delete(new File(webPPath));
+                    // Notify completion với WebP file
+                    if (key != null) {
+                        DownloadManager.getInstance().updateCompleteKey(key);
+                        if (downloadListener != null) {
+                            downloadListener.onComplete(key);
+                        }
+                    }
+                    return;
+                }
+                throw new IOException("Failed to download the image file: " + imageUrl);
             }
-            
-            ImageWriter writer = null;
-            Iterator<ImageWriter> iterator = ImageIO.getImageWritersByFormatName("jpg");
-            if (iterator.hasNext()) {
-                writer = iterator.next();
-            }
-            if (writer != null) {
-                // Cấu hình tham số ghi ảnh JPEG
-                ImageWriteParam params = writer.getDefaultWriteParam();
-                params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                params.setCompressionQuality(1.0f); // Chất lượng nén: từ 0.0 (tệ nhất) đến 1.0 (tốt nhất)
 
-                // Ghi ảnh dưới dạng JPEG
-                File outputFile = new File(targetFilePath);
-                FileImageOutputStream outputStream = new FileImageOutputStream(outputFile);
-                writer.setOutput(outputStream);
-                writer.write(null, new IIOImage(image, null, null), params);
-                writer.dispose();
-                outputStream.close();
-            } else {
-                System.out.println("Không tìm thấy ImageWriter cho định dạng JPEG.");
-            }
-            
+            // Lưu ảnh thành JPEG như cũ
+            saveImageAsJPEG(image, targetFilePath, 1.0f);
+
             if (key != null) {
                 DownloadManager.getInstance().updateCompleteKey(key);
                 if (downloadListener != null) {
                     downloadListener.onComplete(key);
                 }
             }
-        } catch (MalformedURLException ex) {
-            System.out.println("MalformedURLException: " + ex.getMessage());
-        } catch (IOException ex) {
-            System.out.println("IOException: " + ex.getMessage());
-        } finally {
-            if (in != null) {
-                try {
-                    in.close();
-                } catch (IOException ex) {
-                }
-            }
-            
-            try {
-                if (fileChannel != null) {
-                    fileChannel.close();
-                }
-                if (rbc != null) {
-                    rbc.close();
-                }
-                if (connection != null) {
-                    connection.disconnect();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
+        } catch (Exception ex) {
+            System.out.println("Error downloading image: " + ex.getMessage() + " " + imageUrl);
+            ex.printStackTrace();
         }
     }
-    
-    private static BufferedImage downloadImage(String imageUrl) throws IOException {
-        URL url = new URL(imageUrl);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
-        // Thêm tiêu đề User-Agent để giả lập trình duyệt
-        connection.setRequestProperty("User-Agent", "Mozilla/5.0");
-
-        // Kiểm tra mã phản hồi HTTP
-        int responseCode = connection.getResponseCode();
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            throw new IOException("Failed to download image, HTTP response code: " + responseCode);
+    private BufferedImage downloadImage(String imageUrl) {
+        // Thử request JPEG trước
+        BufferedImage jpegImage = requestSpecificFormat(imageUrl, "image/jpeg,image/png,image/gif,*/*;q=0.8");
+        if (jpegImage != null) {
+            return jpegImage;
         }
 
-        // Đọc tệp ảnh từ InputStream
-        try (InputStream inputStream = connection.getInputStream()) {
-            return ImageIO.read(inputStream);
+        // Nếu không được, thử WebP (cần webp-imageio library)
+        return requestSpecificFormat(imageUrl, "image/webp,image/*,*/*;q=0.8");
+    }
+
+    private BufferedImage requestSpecificFormat(String imageUrl, String acceptHeader) {
+        HttpURLConnection connection = null;
+        InputStream inputStream = null;
+
+        try {
+            URL url = new URL(imageUrl);
+            connection = (HttpURLConnection) url.openConnection();
+
+            // Headers
+            connection.setRequestProperty("User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            connection.setRequestProperty("Accept", acceptHeader);
+            connection.setRequestProperty("Accept-Encoding", "identity");
+            connection.setRequestProperty("Referer", "https://www.aliexpress.com/");
+
+            // Timeout
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(30000);
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                inputStream = connection.getInputStream();
+                return ImageIO.read(inputStream);
+            }
+
+        } catch (Exception e) {
+            System.out.println("Request failed for " + acceptHeader + ": " + e.getMessage());
+        } finally {
+            if (inputStream != null) try { inputStream.close(); } catch (IOException e) {}
+            if (connection != null) connection.disconnect();
+        }
+
+        return null;
+    }
+
+    private boolean downloadWebPFile(String imageUrl, String filePath) {
+        HttpURLConnection connection = null;
+        InputStream inputStream = null;
+        FileOutputStream outputStream = null;
+
+        try {
+            URL url = new URL(imageUrl);
+            connection = (HttpURLConnection) url.openConnection();
+
+            connection.setRequestProperty("User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            connection.setRequestProperty("Accept", "image/webp,image/*");
+            connection.setRequestProperty("Referer", "https://www.aliexpress.com/");
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                inputStream = connection.getInputStream();
+                outputStream = new FileOutputStream(filePath);
+
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+                return true;
+            }
+
+        } catch (Exception e) {
+            System.out.println("WebP download failed: " + e.getMessage());
+        } finally {
+            if (inputStream != null) try { inputStream.close(); } catch (IOException e) {}
+            if (outputStream != null) try { outputStream.close(); } catch (IOException e) {}
+            if (connection != null) connection.disconnect();
+        }
+
+        return false;
+    }
+
+    private void saveImageAsJPEG(BufferedImage image, String filePath, float quality) throws IOException {
+        File outputFile = new File(filePath);
+
+        // Tạo thư mục cha nếu chưa tồn tại
+        File parentDir = outputFile.getParentFile();
+        if (parentDir != null && !parentDir.exists()) {
+            parentDir.mkdirs();
+        }
+
+        Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
+        if (!writers.hasNext()) {
+            throw new IOException("No JPEG writer found");
+        }
+
+        ImageWriter writer = writers.next();
+        FileImageOutputStream outputStream = null;
+
+        try {
+            // Cấu hình tham số nén JPEG
+            ImageWriteParam params = writer.getDefaultWriteParam();
+            if (params.canWriteCompressed()) {
+                params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                params.setCompressionQuality(quality); // 0.0 - 1.0
+            }
+
+            outputStream = new FileImageOutputStream(outputFile);
+            writer.setOutput(outputStream);
+            writer.write(null, new IIOImage(image, null, null), params);
+
+        } finally {
+            if (writer != null) {
+                writer.dispose();
+            }
+            if (outputStream != null) {
+                outputStream.close();
+            }
         }
     }
 }

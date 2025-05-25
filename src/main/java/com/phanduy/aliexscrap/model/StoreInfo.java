@@ -1,10 +1,14 @@
 package com.phanduy.aliexscrap.model;
 
+import java.util.ArrayList;
+
 public class StoreInfo {
     private String sellerId;
     private String widgetId;
     private String moduleName;
     public String storeName;
+
+    public ArrayList<String> items;
 
     // Getters and Setters
     public String getSellerId() {

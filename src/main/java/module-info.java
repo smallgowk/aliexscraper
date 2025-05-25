@@ -1,11 +1,9 @@
 module com.phanduy.aliexscrap.aliexscrapper {
-    requires javafx.controls;
     requires javafx.fxml;
     requires javafx.web;
     requires javafx.swing;
 
     // UI libs
-    requires org.controlsfx.controls;
     requires com.dlsc.formsfx;
     requires net.synedra.validatorfx;
     requires org.kordamp.ikonli.javafx;
@@ -28,9 +26,21 @@ module com.phanduy.aliexscrap.aliexscrapper {
     // JAXB
     requires java.xml.bind;
     requires java.prefs;
-    requires java.logging;
     requires annotations;
-    requires gson;
+//    requires gson;
+    requires org.jfxtras.styles.jmetro;
+    requires selenium.api;
+    requires selenium.chrome.driver;
+    requires selenium.remote.driver;
+    requires org.apache.commons.io;
+    requires org.jsoup;
+    requires selenium.support;
+    requires com.google.gson;
+    requires java.sql;
+    requires log4j;
+    requires commons.math3;
+    requires org.apache.commons.codec;
+    requires com.google.common;
 
 
     // Cho phép các package bên ngoài dùng FXML controller của bạn (nếu có)

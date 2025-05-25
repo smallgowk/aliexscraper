@@ -6,6 +6,7 @@ public class Category {
     private String id;
     private String name;
     private int index;
+    public ArrayList<String> items;
     private ArrayList<SubCategory> subList;
 
     // Getters and Setters

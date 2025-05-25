@@ -15,7 +15,7 @@
 <?import javafx.scene.control.TextArea?>
 <AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.phanduy.aliexscrap.HomePanelController"
-            prefWidth="500.0" prefHeight="350.0">
+            prefWidth="500.0" prefHeight="400.0">
 
     <children>
         <VBox spacing="10" AnchorPane.topAnchor="10" AnchorPane.bottomAnchor="10"
@@ -31,7 +31,15 @@
                 <TextField fx:id="configFileField" HBox.hgrow="ALWAYS"/>
                 <Button fx:id="browseConfigFile" text="Browse..."
                         onAction="#onBrowserConfigFile"/>
+                <Button text="Open"
+                        onAction="#onOpenConfigFile"/>
             </HBox>
+<!--            <HBox spacing="10" alignment="CENTER_LEFT">-->
+<!--                <Label text="Select Chrome Profile:" minWidth="85"/>-->
+<!--                <ComboBox fx:id="profileComboBox" AnchorPane.topAnchor="45" AnchorPane.leftAnchor="100"-->
+<!--                          AnchorPane.rightAnchor="10">-->
+<!--                </ComboBox>-->
+<!--            </HBox>-->
 
             <!-- Output Settings -->
             <HBox spacing="10" alignment="CENTER_LEFT">
@@ -44,6 +52,8 @@
                 <TextField fx:id="amzProductTemplate1Field" HBox.hgrow="ALWAYS"/>
                 <Button fx:id="browseTemplate1" text="Browse..."
                         onAction="#onBrowserAmzProductTempFile1"/>
+                <Button text="Open"
+                        onAction="#onOpenAmzProductTempFile1"/>
             </HBox>
 
             <HBox spacing="10" alignment="CENTER_LEFT">
@@ -51,6 +61,8 @@
                 <TextField fx:id="amzProductTemplate2Field" HBox.hgrow="ALWAYS"/>
                 <Button fx:id="browseTemplate2" text="Browse..."
                         onAction="#onBrowserAmzProductTempFile2"/>
+                <Button text="Open"
+                        onAction="#onOpenAmzProductTempFile2"/>
             </HBox>
 
             <HBox spacing="10" alignment="CENTER_LEFT">
@@ -64,6 +76,8 @@
                 <TextField fx:id="outputField" HBox.hgrow="ALWAYS"/>
                 <Button fx:id="browseOutput" text="Browse..."
                         onAction="#onBrowserOutputFolder"/>
+                <Button text="Open"
+                        onAction="#onOpenOutputFolder"/>
             </HBox>
 
             <Separator>

@@ -1,9 +1,12 @@
 package com.phanduy.aliexscrap.model;
 
+import java.util.ArrayList;
+
 public class SubCategory {
     private String id;
     private String name;
     private int index;
+    public ArrayList<String> items;
 
     // Getters and Setters
     public String getId() {

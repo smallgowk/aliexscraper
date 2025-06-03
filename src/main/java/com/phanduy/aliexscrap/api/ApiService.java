@@ -1,49 +1,51 @@
 package com.phanduy.aliexscrap.api;
 
-import com.models.request.CheckConfigsReq;
-import com.models.request.GetPageDataRapidDataReq;
-import com.models.request.SearchRapidReq;
-import com.models.request.TransformRapidDataReq;
+import com.models.request.*;
+import com.models.response.CheckInfoResponse;
 import com.models.response.ConfigInfo;
 import com.models.response.GetPageRapidData;
 import com.models.response.TransformCrawlResponse;
 import com.phanduy.aliexscrap.model.request.*;
+import com.phanduy.aliexscrap.model.request.GetStoreInfoRapidDataReq;
 import com.phanduy.aliexscrap.model.response.*;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.POST;
 
 public interface ApiService {
-    @POST("getStoreInfos")
+    @POST("pltool/getStoreInfos")
     Call<ApiResponse<StoreInfoResponseData>> getFullStoreInfo(@Body GetStoreInfosReq request);
 
-    @POST("getItemsByCategory")
+    @POST("pltool/getItemsByCategory")
     Call<ApiResponse<GetItemsByCategoryResponseData>> getItemsByCategory(@Body GetItemsByCategoryReq request);
 
-    @POST("rapid/getProductInfo")
+    @POST("pltool/rapid/getProductInfo")
     Call<ApiResponse<NewTransformCrawlResponse>> getProductInfo(@Body TransformRapidDataReqV3 request);
 
-    @POST("rapid/getProduct/v2/check_configs")
+    @POST("pltool/rapid/getProduct/v2/check_configs")
     Call<ApiResponse<ConfigInfo>> checkConfig(@Body CheckConfigsReq request);
 
-    @POST("rapid/getProduct/v2/storeInfo")
+    @POST("pltool/rapid/getProduct/v2/storeInfo")
     Call<ApiResponse<GetStoreInfoRapidData>> getStoreInfo(@Body GetStoreInfoRapidDataReq request);
 
-    @POST("rapid/getProduct/v2/pageInfo")
+    @POST("pltool/rapid/getProduct/v2/pageInfo")
     Call<ApiResponse<GetPageDataResponse>> getListProductByPage(@Body GetListProductByPageReq request);
 
-    @POST("rapid/getProduct/classic")
+    @POST("pltool/rapid/getProduct/classic")
     Call<ApiResponse<NewTransformCrawlResponse>> getProductOld(@Body NewTransformRapidDataReq request);
 
-    @POST("rapid/getProduct/v2/pageInfo")
+    @POST("pltool/rapid/getProduct/v2/pageInfo")
     Call<ApiResponse<GetPageRapidData>> getPageData(@Body GetPageDataRapidDataReq request);
 
-    @POST("rapid/getProduct/v2/search")
+    @POST("pltool/rapid/getProduct/v2/search")
     Call<ApiResponse<GetPageRapidData>> searchRapidData(@Body SearchRapidReq request);
 
-    @POST("rapid/getProduct/v2/new")
+    @POST("pltool/rapid/getProduct/v2/new")
     Call<ApiResponse<TransformCrawlResponse>> getNewTemplateProduct(@Body TransformRapidDataReq request);
 
-    @POST("rapid/getProduct/v2")
+    @POST("pltool/rapid/getProduct/v2")
     Call<ApiResponse<TransformCrawlResponse>> getOldTemplateProduct(@Body TransformRapidDataReq request);
+
+    @POST("clientinfo/checkserial/new")
+    Call<ApiResponse<CheckInfoResponse>> checkSerialInfo(@Body CheckInfoReq request);
 }

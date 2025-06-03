@@ -1,13 +1,11 @@
 package com.phanduy.aliexscrap.api;
 
-import com.models.request.CheckConfigsReq;
-import com.models.request.GetPageDataRapidDataReq;
-import com.models.request.SearchRapidReq;
-import com.models.request.TransformRapidDataReq;
+import com.models.request.*;
 import com.models.response.ConfigInfo;
 import com.models.response.GetPageRapidData;
 import com.models.response.TransformCrawlResponse;
 import com.phanduy.aliexscrap.model.request.GetStoreInfoRapidDataReq;
+import com.models.response.CheckInfoResponse;
 import com.phanduy.aliexscrap.model.response.GetStoreInfoRapidData;
 import retrofit2.Call;
 import retrofit2.Response;
@@ -116,6 +114,26 @@ public class ApiCall {
     public TransformCrawlResponse getOldTemplateProduct(TransformRapidDataReq request) throws Exception {
         Call<ApiResponse<TransformCrawlResponse>> call = apiServiceNoLog.getOldTemplateProduct(request);
         Response<ApiResponse<TransformCrawlResponse>> response = null;
+        try {
+            response = call.execute();
+        } catch (IOException e) {
+            return null;
+        }
+
+        if (response.isSuccessful() && response.body() != null) {
+            return response.body().getData();
+        } else {
+            if (response.body() != null && response.body().error != null) {
+                throw new Exception(response.body().error);
+            } else {
+                return null;
+            }
+        }
+    }
+
+    public CheckInfoResponse checkInfo(CheckInfoReq request) throws Exception {
+        Call<ApiResponse<CheckInfoResponse>> call = apiService.checkSerialInfo(request);
+        Response<ApiResponse<CheckInfoResponse>> response = null;
         try {
             response = call.execute();
         } catch (IOException e) {

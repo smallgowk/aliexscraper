@@ -1,13 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox alignment="CENTER" spacing="10" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1">
-   <AnchorPane prefHeight="135.0" prefWidth="432.0">
-      <children>
-          <Label layoutX="193.0" layoutY="60.0" text="Version: " />
-      </children>
-   </AnchorPane>
-</VBox>
+<AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            prefWidth="300.0" prefHeight="200.0" fx:controller="com.phanduy.aliexscrap.AboutPanelController">
+    <children>
+        <VBox spacing="15" alignment="CENTER" AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0"
+              AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
+
+            <!-- Version Label -->
+            <Label fx:id="versionLabel" text="Version: " alignment="CENTER"
+                   style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+
+            <!-- Update Button -->
+            <Button fx:id="updateButton" text="Update" prefWidth="100" prefHeight="30"
+                    style="-fx-background-color: #007acc; -fx-text-fill: white; -fx-font-size: 12px;" onAction="#onUpdateVersion"/>
+
+            <!-- Latest Version Label -->
+            <Label fx:id="latestVersionLabel" text="Latest version: " alignment="CENTER"
+                   style="-fx-font-size: 12px; -fx-text-fill: #666666;"/>
+
+        </VBox>
+    </children>
+</AnchorPane>

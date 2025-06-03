@@ -3,74 +3,86 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.phanduy.aliexscrap.OldHomePanelController"
-            prefWidth="500.0" prefHeight="400.0">
+<VBox xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.phanduy.aliexscrap.OldHomePanelController">
+    <MenuBar>
+        <menus>
+            <Menu text="Menus">
+                <items>
+                    <MenuItem text="About" onAction="#showAboutPanel"/>
+                </items>
+            </Menu>
+        </menus>
+    </MenuBar>
 
-    <children>
-        <VBox spacing="10" AnchorPane.topAnchor="10" AnchorPane.bottomAnchor="10"
-              AnchorPane.leftAnchor="10" AnchorPane.rightAnchor="10">
+    <AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+                prefWidth="500.0" prefHeight="400.0">
 
-            <!-- Input Settings -->
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <Label text="Input" style="-fx-font-weight: bold;"/>
-                <Separator HBox.hgrow="ALWAYS"/>
-            </HBox>
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <Label text="Config File:" minWidth="85"/>
-                <TextField fx:id="configFileField" HBox.hgrow="ALWAYS"/>
-                <Button fx:id="browseConfigFile" text="Browse..."
-                        onAction="#onBrowserConfigFile"/>
-                <Button text="Open"
-                        onAction="#onOpenConfigFile"/>
-            </HBox>
+        <children>
+            <VBox spacing="10" AnchorPane.topAnchor="10" AnchorPane.bottomAnchor="10"
+                  AnchorPane.leftAnchor="10" AnchorPane.rightAnchor="10">
 
-            <!-- Output Settings -->
+                <!-- Input Settings -->
+                <HBox spacing="20" alignment="CENTER_LEFT">
+                    <Label text="Input" style="-fx-font-weight: bold;"/>
+                    <Separator HBox.hgrow="ALWAYS"/>
+                </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Config File:" minWidth="85"/>
+                    <TextField fx:id="configFileField" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="browseConfigFile" text="Browse..."
+                            onAction="#onBrowserConfigFile"/>
+                    <Button text="Open"
+                            onAction="#onOpenConfigFile"/>
+                </HBox>
 
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <Label text="Output" style="-fx-font-weight: bold;"/>
-                <Separator HBox.hgrow="ALWAYS"/>
-            </HBox>
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <Label text="Amz Templates:" minWidth="85"/>
-                <TextField fx:id="amzProductTemplate1Field" HBox.hgrow="ALWAYS"/>
-                <Button fx:id="browseTemplate1" text="Browse..."
-                        onAction="#onBrowserAmzProductTempFile1"/>
-                <Button text="Open"
-                        onAction="#onOpenAmzProductTempFile1"/>
-            </HBox>
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <Label text="Output Folder:" minWidth="85"/>
-                <TextField fx:id="outputField" HBox.hgrow="ALWAYS"/>
-                <Button fx:id="browseOutput" text="Browse..."
-                        onAction="#onBrowserOutputFolder"/>
-                <Button text="Open"
-                        onAction="#onOpenOutputFolder"/>
-            </HBox>
+                <!-- Output Settings -->
 
-            <Separator>
-                <VBox.margin>
-                    <Insets top="10"/>
-                </VBox.margin>
-            </Separator>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Output" style="-fx-font-weight: bold;"/>
+                    <Separator HBox.hgrow="ALWAYS"/>
+                </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Amz Templates:" minWidth="85"/>
+                    <TextField fx:id="amzProductTemplate1Field" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="browseTemplate1" text="Browse..."
+                            onAction="#onBrowserAmzProductTempFile1"/>
+                    <Button text="Open"
+                            onAction="#onOpenAmzProductTempFile1"/>
+                </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Output Folder:" minWidth="85"/>
+                    <TextField fx:id="outputField" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="browseOutput" text="Browse..."
+                            onAction="#onBrowserOutputFolder"/>
+                    <Button text="Open"
+                            onAction="#onOpenOutputFolder"/>
+                </HBox>
 
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <Button fx:id="crawlButton" text="Start"
-                        onAction="#onCrawlClick"/>
-            </HBox>
+                <Separator>
+                    <VBox.margin>
+                        <Insets top="10"/>
+                    </VBox.margin>
+                </Separator>
 
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <Label fx:id="crawlSignLabel" text="" visible="true" style="-fx-text-fill: blue;"/>
-            </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button fx:id="crawlButton" text="Start"
+                            onAction="#onCrawlClick"/>
+                </HBox>
 
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <Label fx:id="statusLabel" text="" visible="true" style="-fx-text-fill: blue;"/>
-            </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label fx:id="crawlSignLabel" text="" visible="true" style="-fx-text-fill: blue;"/>
+                </HBox>
 
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <Label fx:id="downloadImageLabel" text="" visible="true" style="-fx-text-fill: blue;"/>
-            </HBox>
-        </VBox>
-    </children>
-</AnchorPane>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label fx:id="statusLabel" text="" visible="true" style="-fx-text-fill: blue;"/>
+                </HBox>
+
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label fx:id="downloadImageLabel" text="" visible="true" style="-fx-text-fill: blue;"/>
+                </HBox>
+            </VBox>
+        </children>
+    </AnchorPane>
+</VBox>
+
 

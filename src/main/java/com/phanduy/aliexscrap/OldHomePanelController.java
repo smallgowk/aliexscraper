@@ -8,21 +8,40 @@ import com.controller.thread.ProcessCrawlRapidNoCrawlThread;
 import com.interfaces.CrawlProcessListener;
 import com.interfaces.DownloadListener;
 import com.models.aliex.store.inputdata.BaseStoreOrderInfo;
+import com.models.request.CheckInfoReq;
+import com.models.response.CheckInfoResponse;
 import com.models.response.ResponseObj;
+import com.phanduy.aliexscrap.api.ApiCall;
+import com.phanduy.aliexscrap.api.ApiClient;
+import com.phanduy.aliexscrap.api.ApiExecutor;
+import com.phanduy.aliexscrap.api.ApiService;
+import com.phanduy.aliexscrap.model.response.GetPageDataResponse;
+import com.phanduy.aliexscrap.model.response.GetStoreInfoRapidData;
 import com.phanduy.aliexscrap.utils.*;
 import com.utils.ExcelUtils;
 import com.view.DataUtils;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
+import java.awt.*;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.prefs.Preferences;
 
 public class OldHomePanelController {
@@ -47,6 +66,9 @@ public class OldHomePanelController {
     @FXML
     public void initialize() {
         prefs = Preferences.userNodeForPackage(OldHomePanelController.class);
+        String version = VersionUtils.getAppVersionFromResource();
+        prefs.put("Version", version);
+
         loadSettings();
         DownloadManager.getInstance().setListener(downloadListener);
 //        DownloadManager.getInstance().testDownload(
@@ -75,8 +97,85 @@ public class OldHomePanelController {
 //        // Chạy trong thread mới
 //        Thread downloadThread = new Thread(downloader);
 //        downloadThread.start();
+        ThreadManager.getInstance().submitTask(
+                () -> {
+                    try {
+                        CheckInfoResponse checkInfoResponse = ApiCall.getInstance().checkInfo(
+                                new CheckInfoReq(
+                                        version,
+                                        ComputerIdentifier.getDiskSerialNumber(),
+                                        "newpltool"
+                                )
+                        );
+                        int code = checkInfoResponse.getResultCode();
+                        if (code != 1) {
+                            switch (code) {
+                                case CheckInfoResponse.SERIAL_INVALID:
+                                    showInvalidInfo("Máy tính cài đặt không hợp lệ. Liên hệ 0972071089 để được xác thực!");
+                                    break;
+                                case CheckInfoResponse.TIME_LIMIT:
+                                    showInvalidInfo("Máy tính đã hết thời gian sử dụng. Liên hệ 0972071089 để được xử lý!");
+                                    break;
+                                case CheckInfoResponse.PRODUCT_LIMIT:
+                                    showInvalidInfo("Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
+                                    break;
+                                case CheckInfoResponse.VERSION_INVALID:
+                                    showInvalidVersion("Version app đã quá cũ! Vui lòng cập nhật version mới để sử dụng!", checkInfoResponse.getLatestVersion());
+                                    break;
+                                default:
+                                    showInvalidInfo("Server error!. Liên hệ 0972071089 để được xử lý!");
+                            }
+                        } else {
+                            prefs.putBoolean("Latest", checkInfoResponse.isLatest());
+                            prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
+                        }
 
+                    } catch (Exception e) {
+                        showInvalidInfo("Có lỗi xảy ra!");
+                    }
+                }
+        );
     }
+
+    private void showInvalidInfo(String message) {
+        Platform.runLater(
+                () -> {
+                    boolean ok = AlertUtil.showError("", message);
+                    if (ok) {
+                        Platform.exit();
+                    }
+                }
+        );
+    }
+
+    private void showInvalidVersion(String message, String latestVersion) {
+        Platform.runLater(
+                () -> {
+                    boolean confirmed = AlertUtil.showConfirmDialog("", message);
+                    if (confirmed) {
+                        openDownloadInBrowser(latestVersion);
+                        Platform.exit();
+                    } else {
+                        Platform.exit();
+                    }
+                }
+        );
+    }
+
+    private void openDownloadInBrowser(String latestVersion) {
+        try {
+            String downloadUrl = "http://iamhere.vn/AliexScrapInstaller-" + latestVersion + ".zip";
+
+            // Mở URL trong trình duyệt mặc định
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(new URI(downloadUrl));
+            }
+
+        } catch (Exception e) {
+            AlertUtil.showError("Lỗi", "Không thể mở trình duyệt: " + e.getMessage());
+        }
+    }
+
 
     @FXML
     private void onOpenConfigFile() {
@@ -368,4 +467,30 @@ public class OldHomePanelController {
         downloadImageLabel.setText("Downloaded Images: " + DownloadManager.getInstance().getTotalComplete());
     }
 
+    @FXML
+    private void showAboutPanel() {
+        try {
+            // Load HomePanel.fxml
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/phanduy/aliexscrap/AboutPanel.fxml"));
+            Parent root = loader.load();
+
+
+            // Tạo cửa sổ mới (Stage)
+            Stage settingStage = new Stage();
+            settingStage.getIcons().add(new Image(getClass().getResourceAsStream("/image/aliexscrap.png")));
+            settingStage.setTitle("About");
+            settingStage.setScene(new Scene(root));
+
+            // Căn chỉnh kích thước cửa sổ
+            settingStage.setMinWidth(300);
+            settingStage.setMinHeight(200);
+            settingStage.setResizable(false);
+
+            // Hiển thị cửa sổ (floating panel)
+            settingStage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

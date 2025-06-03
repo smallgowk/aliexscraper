@@ -17,7 +17,8 @@ public class TransformRapidDataReq {
     public String currency;
     public String region;
     public String locale;
-    
+    public String module;
+
     public ToolAndStoreInfo toolAndStoreInfo;
 
     public TransformRapidDataReq(
@@ -25,6 +26,7 @@ public class TransformRapidDataReq {
             String currency, 
             String region, 
             String locale, 
+            String module,
             AliexStoreInfo aliexStoreInfo,
             HashMap<String, String> toolParams
     ) {
@@ -32,7 +34,8 @@ public class TransformRapidDataReq {
         this.currency = currency;
         this.region = region;
         this.locale = locale;
-        
+        this.module = module;
+
         toolAndStoreInfo = new ToolAndStoreInfo();
         toolAndStoreInfo.configs = toolParams;
         toolAndStoreInfo.updateToolConfig();

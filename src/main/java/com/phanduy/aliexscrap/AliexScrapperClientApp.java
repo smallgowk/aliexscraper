@@ -22,7 +22,6 @@ public class AliexScrapperClientApp extends Application {
 //        JMetro jMetro = new JMetro(Style.LIGHT); // hoặc Style.DARK
 //        jMetro.setScene(new Scene(root, 500, 350)); // tạo scene có style
 
-
         primaryStage.setTitle("Aliexpress Scraper - version " + VersionUtils.getAppVersionFromResource());
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/image/aliexscrap.png")));
         primaryStage.setScene(new Scene(root, 500, 400));

@@ -343,6 +343,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 "USD",
                 aliexStoreInfo.region,
                 Configs.regionMap.get(aliexStoreInfo.region),
+                "newpltool",
                 aliexStoreInfo,
                 toolParams
         );
@@ -377,6 +378,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                         "USD",
                         aliexStoreInfo.region,
                         Configs.regionMap.get(aliexStoreInfo.region),
+                        "newpltool",
                         aliexStoreInfo,
                         toolParams
                 );
@@ -476,6 +478,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                         "USD",
                         aliexStoreInfo.region,
                         Configs.regionMap.get(aliexStoreInfo.region),
+                        "newpltool",
                         aliexStoreInfo,
                         toolParams
                 );

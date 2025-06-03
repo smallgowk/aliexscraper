@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'com.phanduy.aliexscrap'
-version '1.0'
+version '1.0.0'
 
 task createProperties(dependsOn: processResources) {
   doLast {
@@ -155,7 +155,7 @@ jlink {
     installerName = 'AliexScrapInstaller'
     installerType = 'exe'
     icon = file('src/main/resources/image/aliexscrap.ico').absolutePath
-    appVersion = '1.0.0'
+    appVersion = version
     installerOptions = [
             '--win-menu',
             '--win-shortcut',

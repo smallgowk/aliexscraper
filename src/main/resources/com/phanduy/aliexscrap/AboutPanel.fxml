@@ -4,6 +4,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 
+<?import javafx.scene.control.TextField?>
 <AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
             prefWidth="300.0" prefHeight="200.0" fx:controller="com.phanduy.aliexscrap.AboutPanelController">
     <children>
@@ -13,6 +14,10 @@
             <!-- Version Label -->
             <Label fx:id="versionLabel" text="Version: " alignment="CENTER"
                    style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+
+            <!-- Version Label -->
+            <TextField fx:id="computerSerial" text="" alignment="CENTER" editable="false"
+                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: transparent; -fx-border-color: transparent;"/>
 
             <!-- Update Button -->
             <Button fx:id="updateButton" text="Update" prefWidth="100" prefHeight="30"

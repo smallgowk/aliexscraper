@@ -47,9 +47,9 @@ module com.phanduy.aliexscrap.aliexscrapper {
 
     // Cho phép các package bên ngoài dùng FXML controller của bạn (nếu có)
     opens com.phanduy.aliexscrap to javafx.fxml, com.google.gson;
-    opens com.models.request to com.google.gson, retrofit2;
-    opens com.models.response to com.google.gson, retrofit2;
     opens com.phanduy.aliexscrap.api to com.google.gson, retrofit2;
     opens com.models.amazon to com.google.gson, retrofit2;
     exports com.phanduy.aliexscrap;
+    opens com.phanduy.aliexscrap.model.request to com.google.gson, retrofit2;
+    opens com.phanduy.aliexscrap.model.response to com.google.gson, retrofit2;
 }

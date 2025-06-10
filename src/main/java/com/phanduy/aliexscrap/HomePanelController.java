@@ -1,7 +1,7 @@
 package com.phanduy.aliexscrap;
 
 import com.google.gson.Gson;
-import com.models.request.CheckConfigsReq;
+import com.phanduy.aliexscrap.model.request.CheckConfigsReq;
 import com.phanduy.aliexscrap.api.ApiClient;
 import com.phanduy.aliexscrap.api.ApiExecutor;
 import com.phanduy.aliexscrap.api.ApiResponse;
@@ -10,6 +10,7 @@ import com.phanduy.aliexscrap.model.*;
 import com.phanduy.aliexscrap.model.request.*;
 import com.phanduy.aliexscrap.model.response.*;
 import com.phanduy.aliexscrap.utils.*;
+import com.phanduy.aliexscrap.utils.ComputerIdentifier;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;

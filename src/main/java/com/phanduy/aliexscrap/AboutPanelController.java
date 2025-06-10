@@ -3,11 +3,12 @@ package com.phanduy.aliexscrap;
 import com.phanduy.aliexscrap.api.ApiClient;
 import com.phanduy.aliexscrap.api.ApiService;
 import com.phanduy.aliexscrap.utils.AlertUtil;
-import com.phanduy.aliexscrap.utils.FileOpener;
 import com.phanduy.aliexscrap.utils.VersionUtils;
+import com.phanduy.aliexscrap.utils.ComputerIdentifier;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 
 import java.awt.*;
 import java.net.URI;
@@ -15,6 +16,7 @@ import java.util.prefs.Preferences;
 
 public class AboutPanelController {
     @FXML private Label versionLabel;
+    @FXML private TextField computerSerial;
     @FXML private Label latestVersionLabel;
     @FXML private Button updateButton;
     private final ApiService apiService = ApiClient.getClient().create(ApiService.class);
@@ -25,6 +27,7 @@ public class AboutPanelController {
     private void initialize() {
         prefs = Preferences.userNodeForPackage(AboutPanelController.class);
         versionLabel.setText("Version: " + VersionUtils.getAppVersionFromResource());
+        computerSerial.setText(ComputerIdentifier.diskSerial);
         if (prefs.getBoolean("Latest", false)) {
             latestVersionLabel.setVisible(true);
             updateButton.setVisible(false);

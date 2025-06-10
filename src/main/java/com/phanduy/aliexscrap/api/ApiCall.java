@@ -1,11 +1,10 @@
 package com.phanduy.aliexscrap.api;
 
-import com.models.request.*;
-import com.models.response.ConfigInfo;
-import com.models.response.GetPageRapidData;
-import com.models.response.TransformCrawlResponse;
-import com.phanduy.aliexscrap.model.request.GetStoreInfoRapidDataReq;
-import com.models.response.CheckInfoResponse;
+import com.phanduy.aliexscrap.model.response.ConfigInfo;
+import com.phanduy.aliexscrap.model.response.GetPageRapidData;
+import com.phanduy.aliexscrap.model.response.TransformCrawlResponse;
+import com.phanduy.aliexscrap.model.request.*;
+import com.phanduy.aliexscrap.model.response.CheckInfoResponse;
 import com.phanduy.aliexscrap.model.response.GetStoreInfoRapidData;
 import retrofit2.Call;
 import retrofit2.Response;

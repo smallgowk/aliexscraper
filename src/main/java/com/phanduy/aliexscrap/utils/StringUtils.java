@@ -1,9 +1,19 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package com.phanduy.aliexscrap.utils;
 
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
+/**
+ *
+ * @author Admin
+ */
 public class StringUtils {
+
     public static String getFirstCapitalWord(String input) {
         if (input == null || input.isEmpty()) {
             return null;
@@ -17,7 +27,7 @@ public class StringUtils {
             c -= 32;
             return c + input.substring(1, input.length());
         }
-
+        
         return input;
     }
 
@@ -54,11 +64,11 @@ public class StringUtils {
     }
 
     public static String getStringBrief(String input) {
-
+        
         if(input == null || input.isEmpty()) {
             return "";
         }
-
+        
         StringBuilder sb = new StringBuilder();
         sb.append(input.charAt(0));
         for (int i = 1, length = input.length(); i < length; i++) {
@@ -103,7 +113,7 @@ public class StringUtils {
         Pattern pattern = Pattern.compile("[A-Za-z]+");
         return pattern.matcher(input).matches();
     }
-
+    
     public static boolean isCharactorOnly(String input) {
 
         if (input == null || input.length() <= 2) {
@@ -207,12 +217,35 @@ public class StringUtils {
     public static boolean isEmpty(String input) {
         return input == null || input.trim().isEmpty();
     }
-
+    
+//    public static boolean isCharVisible(String input) {
+//        if (input == null || input.isEmpty()) {
+//            return false;
+//        }
+//
+//        if (AWSUtil.containBannedKeyword(input) != null) {
+//            return false;
+//        }
+//
+//        if (input.trim().equals("&nbsp;")) {
+//            return false;
+//        }
+//
+//        for (int i = 0, length = input.length(); i < length; i++) {
+//            char c = input.charAt(i);
+//            if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122)) {
+//                return true;
+//            }
+//        }
+//
+//        return false;
+//    }
+    
     public static boolean isTextOnly(String input) {
         if (input == null || input.isEmpty()) {
             return false;
         }
-
+        
         String regex = "[a-zA-Z-_ ]+";
         return Pattern.matches(regex, input);
 
@@ -229,7 +262,7 @@ public class StringUtils {
 //
 //        return false;
     }
-
+    
     public static String removeWord(String input, String word) {
         if (isEmpty(word)) {
             return input;
@@ -257,17 +290,14 @@ public class StringUtils {
 
         return sb.toString();
     }
+    
+    public static boolean isOnlyNumberWord(String input) {
 
-    public static String formatPrice(float price) {
-        return String.format("%.2f", price);
-    }
+        if (input == null || input.trim().isEmpty()) {
+            return false;
+        }
 
-    public static String getCEOPrice(float price) {
-//        int n = (int) price;
-//
-//        float ceoPrice = n * 1f + 0.99f;
-//
-//        return formatPrice(ceoPrice);
-        return formatPrice(price);
+        Pattern pattern = Pattern.compile("[0-9]+");
+        return pattern.matcher(input).matches();
     }
 }

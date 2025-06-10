@@ -1,25 +1,22 @@
 package com.phanduy.aliexscrap;
 
-import com.config.Configs;
-import com.controller.DownloadManager;
-import com.controller.inputprocess.InputDataConfig;
-import com.controller.inputprocess.SnakeReadOrderInfoSvs;
-import com.controller.thread.ProcessCrawlRapidNoCrawlThread;
-import com.interfaces.CrawlProcessListener;
-import com.interfaces.DownloadListener;
-import com.models.aliex.store.inputdata.BaseStoreOrderInfo;
-import com.models.request.CheckInfoReq;
-import com.models.response.CheckInfoResponse;
-import com.models.response.ResponseObj;
+import com.phanduy.aliexscrap.config.Configs;
+import com.phanduy.aliexscrap.controller.DownloadManager;
+import com.phanduy.aliexscrap.controller.inputprocess.InputDataConfig;
+import com.phanduy.aliexscrap.controller.inputprocess.SnakeReadOrderInfoSvs;
+import com.phanduy.aliexscrap.controller.thread.ProcessCrawlRapidNoCrawlThread;
+import com.phanduy.aliexscrap.interfaces.CrawlProcessListener;
+import com.phanduy.aliexscrap.interfaces.DownloadListener;
+import com.phanduy.aliexscrap.model.aliex.store.inputdata.BaseStoreOrderInfo;
+import com.phanduy.aliexscrap.model.request.CheckInfoReq;
+import com.phanduy.aliexscrap.model.response.CheckInfoResponse;
+import com.phanduy.aliexscrap.model.response.ResponseObj;
 import com.phanduy.aliexscrap.api.ApiCall;
-import com.phanduy.aliexscrap.api.ApiClient;
-import com.phanduy.aliexscrap.api.ApiExecutor;
-import com.phanduy.aliexscrap.api.ApiService;
-import com.phanduy.aliexscrap.model.response.GetPageDataResponse;
-import com.phanduy.aliexscrap.model.response.GetStoreInfoRapidData;
 import com.phanduy.aliexscrap.utils.*;
-import com.utils.ExcelUtils;
-import com.view.DataUtils;
+import com.phanduy.aliexscrap.utils.ComputerIdentifier;
+import com.phanduy.aliexscrap.utils.ExcelUtils;
+import com.phanduy.aliexscrap.utils.DataUtils;
+import com.phanduy.aliexscrap.utils.StringUtils;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -36,12 +33,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.prefs.Preferences;
 
 public class OldHomePanelController {

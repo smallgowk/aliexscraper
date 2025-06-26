@@ -5,7 +5,7 @@
  */
 package com.phanduy.aliexscrap.model.aliex;
 
-import com.models.amazon.DataStore;
+import com.phanduy.aliexscrap.model.amazon.DataStore;
 import com.phanduy.aliexscrap.utils.MarketUtil;
 import com.phanduy.aliexscrap.utils.StringUtils;
 import java.util.ArrayList;

@@ -7,9 +7,9 @@ package com.phanduy.aliexscrap.controller.inputprocess;
 
 import com.phanduy.aliexscrap.config.Configs;
 import com.phanduy.aliexscrap.model.aliex.store.inputdata.BaseStoreOrderInfo;
-import com.models.amazon.BTGManager;
-import com.models.amazon.BTGNode;
 import com.phanduy.aliexscrap.model.aliex.store.AliexStoreInfo;
+import com.phanduy.aliexscrap.model.amazon.BTGManager;
+import com.phanduy.aliexscrap.model.amazon.BTGNode;
 import com.phanduy.aliexscrap.utils.ExcelUtils;
 import com.phanduy.aliexscrap.utils.StringUtils;
 import java.util.ArrayList;

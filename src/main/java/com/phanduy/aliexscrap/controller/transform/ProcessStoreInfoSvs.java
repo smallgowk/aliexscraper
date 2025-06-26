@@ -8,11 +8,11 @@ package com.phanduy.aliexscrap.controller.transform;
 import com.phanduy.aliexscrap.config.Configs;
 import com.phanduy.aliexscrap.controller.DownloadManager;
 import com.phanduy.aliexscrap.model.aliex.AliexProductFull;
-import com.models.amazon.ProductAmz;
+import com.phanduy.aliexscrap.model.amazon.ProductAmz;
 import com.phanduy.aliexscrap.model.aliex.store.AliexPageInfo;
 import com.phanduy.aliexscrap.model.aliex.store.AliexStoreInfo;
-import com.models.amazon.AmzContentFormat;
-import com.models.amazon.DataStore;
+import com.phanduy.aliexscrap.model.amazon.AmzContentFormat;
+import com.phanduy.aliexscrap.model.amazon.DataStore;
 
 import com.phanduy.aliexscrap.model.request.ImagePathModel;
 import com.phanduy.aliexscrap.model.response.TransformCrawlResponse;

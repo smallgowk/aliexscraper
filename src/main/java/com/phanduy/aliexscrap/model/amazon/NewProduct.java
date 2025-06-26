@@ -1,4 +1,4 @@
-package com.models.amazon;
+package com.phanduy.aliexscrap.model.amazon;
 
 import com.phanduy.aliexscrap.utils.StringUtils;
 

@@ -2,8 +2,8 @@ package com.phanduy.aliexscrap.model.response;
 
 import com.phanduy.aliexscrap.config.Configs;
 import com.phanduy.aliexscrap.controller.DownloadManager;
-import com.models.amazon.NewProduct;
-import com.models.amazon.ProductAmz;
+import com.phanduy.aliexscrap.model.amazon.NewProduct;
+import com.phanduy.aliexscrap.model.amazon.ProductAmz;
 import com.phanduy.aliexscrap.utils.StringUtils;
 import java.util.ArrayList;
 

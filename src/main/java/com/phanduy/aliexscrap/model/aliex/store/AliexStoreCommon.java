@@ -6,8 +6,8 @@
 package com.phanduy.aliexscrap.model.aliex.store;
 
 import com.phanduy.aliexscrap.config.Configs;
-import com.models.amazon.BTGNode;
-import com.models.amazon.BrowseTreeManager;
+import com.phanduy.aliexscrap.model.amazon.BTGNode;
+import com.phanduy.aliexscrap.model.amazon.BrowseTreeManager;
 import com.phanduy.aliexscrap.utils.StringUtils;
 
 import java.io.File;

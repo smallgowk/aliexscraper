@@ -93,6 +93,46 @@ public class OldHomePanelController {
         ThreadManager.getInstance().submitTask(
                 () -> {
                     try {
+
+//                        String url = "https://api-sg.aliexpress.com";
+//                        String appkey = "515692";
+//                        String appSecret = "huVduSIdpcGnA17srissOCAosLYKBneF";
+//                        String action = "/auth/token/create";
+//
+//
+//                        IopClientImpl client = new IopClientImpl(url, appkey, appSecret);
+//                        IopRequest request = new IopRequest();
+//                        request.setApiName("aliexpress.ds.product.wholesale.get");
+//                        request.addApiParameter("ship_to_country", "US");
+//                        request.addApiParameter("product_id", "1005003784285827");
+//                        request.addApiParameter("target_currency", "USD");
+//                        request.addApiParameter("target_language", "en");
+//                        request.addApiParameter("remove_personal_benefit", "false");
+//
+//
+////                        request.setApiName(action);
+////                        request.addApiParameter("code", "3_515692_7emlFdEahsy17b01D9Wp6bq917069");
+////                        request.addApiParameter("uuid", "uuid");
+//
+////                        request.setApiName("aliexpress.ds.feed.itemids.get");
+////                        request.addApiParameter("page_size", "10");
+////                        request.addApiParameter("category_id", "21");
+////                        request.addApiParameter("feed_name", "DS bestseller");
+////                        request.addApiParameter("search_id", "abc123");
+////                        IopResponse response = client.execute(request, "50000201412dy6gsdjsDRQib13b08fbbdjSiszUlKFLhWfwzBdxAOwhtuaLP0XRkIq0h", Protocol.TOP);
+//
+//                        IopResponse response = null;
+//                        try {
+////                            response = client.execute(request, Protocol.GOP);
+//                            response = client.execute(request, "50000201412dy6gsdjsDRQib13b08fbbdjSiszUlKFLhWfwzBdxAOwhtuaLP0XRkIq0h", Protocol.TOP);
+////                            System.out.println("Success!");
+//                            System.out.println("Success: " + response.getGopResponseBody());
+//                            Thread.sleep(10);
+//                        } catch (ApiException e) {
+//                            e.printStackTrace();
+//                            System.out.println("Faile: ");
+//                        }
+
                         CheckInfoResponse checkInfoResponse = ApiCall.getInstance().checkInfo(
                                 new CheckInfoReq(
                                         version,
@@ -124,10 +164,13 @@ public class OldHomePanelController {
                         }
 
                     } catch (Exception e) {
+                        System.out.println("" + e.getMessage());
                         showInvalidInfo("Có lỗi xảy ra!");
                     }
                 }
         );
+
+
     }
 
     private void showInvalidInfo(String message) {
@@ -300,6 +343,9 @@ public class OldHomePanelController {
             processCrawlThread.doStop();
             return;
         }
+
+        downloadImageLabel.setText("");
+        DownloadManager.getInstance().clearData();
 
         String configFile = configFileField.getText();
         if (StringUtils.isEmpty(configFile)) {

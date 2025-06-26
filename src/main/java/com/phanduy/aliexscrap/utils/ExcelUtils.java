@@ -6,9 +6,9 @@
 package com.phanduy.aliexscrap.utils;
 
 import com.phanduy.aliexscrap.config.Configs;
-import com.models.amazon.*;
 import com.phanduy.aliexscrap.model.aliex.store.AliexStoreInfo;
 import com.phanduy.aliexscrap.model.aliex.store.inputdata.BaseStoreOrderInfo;
+import com.phanduy.aliexscrap.model.amazon.*;
 import com.phanduy.aliexscrap.model.response.TransformCrawlResponse;
 import java.io.File;
 import java.io.FileInputStream;

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.models.amazon;
+package com.phanduy.aliexscrap.model.amazon;
 
 import java.util.HashMap;
 

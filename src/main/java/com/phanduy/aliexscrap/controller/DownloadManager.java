@@ -5,9 +5,9 @@
  */
 package com.phanduy.aliexscrap.controller;
 
-import com.models.amazon.NewProduct;
-import com.models.amazon.ProductAmz;
 import com.phanduy.aliexscrap.interfaces.DownloadListener;
+import com.phanduy.aliexscrap.model.amazon.NewProduct;
+import com.phanduy.aliexscrap.model.amazon.ProductAmz;
 import com.phanduy.aliexscrap.model.response.TransformCrawlResponse;
 import com.phanduy.aliexscrap.utils.StringUtils;
 import org.apache.commons.io.FileUtils;

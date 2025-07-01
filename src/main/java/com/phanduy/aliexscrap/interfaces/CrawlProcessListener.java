@@ -13,7 +13,7 @@ import com.phanduy.aliexscrap.model.response.ResponseObj;
  * @author PhanDuy
  */
 public interface CrawlProcessListener {
-    public void onPushState(String storeSign, String state);
+    public void onPushState(String signature, String pageNumber, String status);
 //    public void onPushErrorRequest(String storeSign, ResponseObj responseObj);
 //    public void onStartProcess(String storeSign, String info);
 //    public void onStop(String storeSign);

@@ -15,7 +15,7 @@ public class ApiCall {
     public ApiCall() {
         this.apiService = ApiClient.getClient().create(ApiService.class);
         this.apiGGService = ApiClient.getGGClient().create(ApiService.class);
-        this.apiServiceNoLog = ApiClient.getClient().create(ApiService.class);
+        this.apiServiceNoLog = ApiClient.getClientNoLog().create(ApiService.class);
     }
 
     public static ApiCall getInstance() {

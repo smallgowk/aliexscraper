@@ -78,17 +78,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
     int totalCount = 0;
     boolean isHasShip = false;
 
-    public void doStop() {
-        isStop = true;
-        try {
-            interrupt();
-        } catch (Exception ex) {
-            System.out.println("Do stop: " + ex.getMessage());
-        } finally {
-            crawlProcessListener.onStop("");
-        }
-    }
-
     public int getPercentProcess(int size, int j) {
         int percent = (int) ((((j + 1) * 1f) / size) * 100);
         if (percent == 100) {
@@ -110,7 +99,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             if (configInfo == null) {
                 isStop = true;
                 DialogUtil.showInfoMessage(null, "Lỗi hệ thống! Vui lòng kiểm tra kết nối mạng hoặc báo người quản trị!");
-                crawlProcessListener.onExit();
                 return;
             }
 
@@ -134,9 +122,9 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
     public void processStore(AliexStoreInfo aliexStoreInfo, String computerSerial) {
         try {
             aliexStoreInfo.setStoreSign(signature);
-            crawlProcessListener.onStartProcess(aliexStoreInfo.getStoreSign(), aliexStoreInfo.info);
+//            crawlProcessListener.onStartProcess(aliexStoreInfo.getStoreSign(), aliexStoreInfo.info);
             processStoreInfoSvs.processStoreInfo(aliexStoreInfo);
-            crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting product info...");
+            crawlProcessListener.onPushState(signature, pageNumber, "...");
             GetAliexProductsReq getAliexProductsReq = new GetAliexProductsReq(
                     computerSerial,
                     signature,
@@ -150,8 +138,8 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 processNewFormatFlow(getPageGGProducts, aliexStoreInfo);
             }
 
-            crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Done (" + successCount + "/" + totalCount + ")");
-            crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
+            crawlProcessListener.onPushState(signature, pageNumber, "Done");
+//            crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
         } catch (Exception ex) {
             try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
                 fw.write("[Thread] processStore Exception: " + ex.toString() + "\n");
@@ -220,7 +208,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                     CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
                     if (Configs.isStopByNoShipping && page == 1 && j == 9 && !isHasShip) {
                         DialogUtil.showInfoMessage(null, "Store có nhiều sản phẩm không có ship. Tool sẽ dừng crawl store này để tiết kiệm request!");
-                        crawlProcessListener.onExit();
+//                        crawlProcessListener.onExit();
                         return;
                     }
                     processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, e.getMessage());
@@ -235,7 +223,8 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             }
             if (!isStop) {
                 crawlProcessListener.onPushState(
-                        aliexStoreInfo.getStoreSign(),
+                        signature,
+                        pageNumber,
                         processStoreInfoSvs.getStatus(aliexStoreInfo.getStoreSign(), page, aliexStoreInfo.totalPage, j, size)
                 );
             }
@@ -249,7 +238,8 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         processStoreInfoSvs.processPageInfoNew(aliexStoreInfo, aliexPageInfo, page, listResults, baseStoreOrderInfo.getCategory());
 
         crawlProcessListener.onPushState(
-                aliexStoreInfo.getStoreSign(),
+                signature,
+                pageNumber,
                 processStoreInfoSvs.getStatusWithFixedPercent(aliexStoreInfo.getStoreSign(), page, aliexStoreInfo.totalPage, 100, size)
         );
         successCount += processStoreInfoSvs.getSuccessCount(aliexStoreInfo.getStoreSign(), page);
@@ -307,7 +297,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                     CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
                     if (Configs.isStopByNoShipping && page == 1 && j == 9 && !isHasShip) {
                         DialogUtil.showInfoMessage(null, "Store có nhiều sản phẩm không có ship. Tool sẽ dừng crawl store này để tiết kiệm request!");
-                        crawlProcessListener.onExit();
+//                        crawlProcessListener.onExit();
                         return;
                     }
                     processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, e.getMessage());
@@ -326,8 +316,9 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 
             if (!isStop) {
                 crawlProcessListener.onPushState(
-                        aliexStoreInfo.getStoreSign(),
-                        processStoreInfoSvs.getStatus(aliexStoreInfo.getStoreSign(), page, aliexStoreInfo.totalPage, j, size)
+                        signature,
+                        pageNumber,
+                        processStoreInfoSvs.getPercentProcess(size, j) + "%"
                 );
             }
         }
@@ -340,8 +331,9 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         processStoreInfoSvs.processPageInfo(aliexPageInfo);
 
         crawlProcessListener.onPushState(
-                aliexStoreInfo.getStoreSign(),
-                processStoreInfoSvs.getStatusWithFixedPercent(aliexStoreInfo.getStoreSign(), page, aliexStoreInfo.totalPage, 100, size)
+                signature,
+                pageNumber,
+                "Done"
         );
         successCount += processStoreInfoSvs.getSuccessCount(aliexStoreInfo.getStoreSign(), page);
         processStoreInfoSvs.clearMapData();

@@ -24,7 +24,7 @@ public class AliexScrapperClientApp extends Application {
 
         primaryStage.setTitle("Aliexpress Scraper - version " + VersionUtils.getAppVersionFromResource());
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/image/aliexscrap.png")));
-        primaryStage.setScene(new Scene(root, 500, 400));
+        primaryStage.setScene(new Scene(root, 500, 700));
         primaryStage.setResizable(false);
 
         primaryStage.show();

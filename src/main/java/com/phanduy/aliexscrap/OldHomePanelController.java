@@ -42,6 +42,16 @@ import java.net.URISyntaxException;
 import java.util.prefs.Preferences;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import javafx.scene.control.TableCell;
+import javafx.util.Callback;
 
 public class OldHomePanelController {
     @FXML private TextField amzProductTemplate1Field;
@@ -54,9 +64,36 @@ public class OldHomePanelController {
     @FXML private Button browseTemplate1;
     @FXML private Button startButton;
 
-    @FXML private Label crawlSignLabel;
-    @FXML private Label statusLabel;
     @FXML private Label downloadImageLabel;
+
+    @FXML private TableView<CrawlTaskStatus> crawlTable;
+    @FXML private TableColumn<CrawlTaskStatus, String> signatureCol;
+    @FXML private TableColumn<CrawlTaskStatus, Number> pageCol;
+    @FXML private TableColumn<CrawlTaskStatus, String> progressCol;
+
+    private ObservableList<CrawlTaskStatus> crawlTaskList = FXCollections.observableArrayList();
+    private Map<String, CrawlTaskStatus> crawlTaskMap = new ConcurrentHashMap<>();
+
+    public static class CrawlTaskStatus {
+        private final SimpleStringProperty signature;
+        private final SimpleIntegerProperty pageNumber;
+        private final SimpleStringProperty progress;
+
+        public CrawlTaskStatus(String signature, int pageNumber, String progress) {
+            this.signature = new SimpleStringProperty(signature);
+            this.pageNumber = new SimpleIntegerProperty(pageNumber);
+            this.progress = new SimpleStringProperty(progress);
+        }
+        public String getSignature() { return signature.get(); }
+        public void setSignature(String value) { signature.set(value); }
+        public SimpleStringProperty signatureProperty() { return signature; }
+        public int getPageNumber() { return pageNumber.get(); }
+        public void setPageNumber(int value) { pageNumber.set(value); }
+        public SimpleIntegerProperty pageNumberProperty() { return pageNumber; }
+        public String getProgress() { return progress.get(); }
+        public void setProgress(String value) { progress.set(value); }
+        public SimpleStringProperty progressProperty() { return progress; }
+    }
 
     // Preferences API để cache setting
     private Preferences prefs;
@@ -119,6 +156,32 @@ public class OldHomePanelController {
 
         // --- WebSocket STOMP logic ---
 
+        // TableView binding
+        signatureCol.setCellValueFactory(cellData -> cellData.getValue().signatureProperty());
+        pageCol.setCellValueFactory(cellData -> cellData.getValue().pageNumberProperty());
+        progressCol.setCellValueFactory(cellData -> cellData.getValue().progressProperty());
+        crawlTable.setItems(crawlTaskList);
+
+        // Căn giữa nội dung các cell cho 3 cột
+        Callback<TableColumn<CrawlTaskStatus, String>, TableCell<CrawlTaskStatus, String>> centerStringCellFactory = col -> new TableCell<CrawlTaskStatus, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : item);
+                setStyle("-fx-alignment: CENTER;");
+            }
+        };
+        Callback<TableColumn<CrawlTaskStatus, Number>, TableCell<CrawlTaskStatus, Number>> centerNumberCellFactory = col -> new TableCell<CrawlTaskStatus, Number>() {
+            @Override
+            protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : item.toString());
+                setStyle("-fx-alignment: CENTER;");
+            }
+        };
+        signatureCol.setCellFactory(centerStringCellFactory);
+        pageCol.setCellFactory(centerNumberCellFactory);
+        progressCol.setCellFactory(centerStringCellFactory);
     }
 
     private void initSocket() throws URISyntaxException {
@@ -434,6 +497,12 @@ public class OldHomePanelController {
             AlertUtil.showError("", "Error getting storeOrderInfo!");
             return;
         }
+
+        String key = signature + "_" + pageNumber;
+        CrawlTaskStatus status = new CrawlTaskStatus(signature, Integer.parseInt(pageNumber), "Waiting");
+        crawlTaskMap.put(key, status);
+        Platform.runLater(() -> crawlTaskList.add(status));
+
         try {
             CrawlExecutor.executeThread(
                     new ProcessCrawlRapidNoCrawlThread(
@@ -441,14 +510,7 @@ public class OldHomePanelController {
                             inputDataConfig.params,
                             signature,
                             pageNumber,
-                            new CrawlProcessListener() {
-                                @Override
-                                public void onPushState(String storeSign, String state) {
-                                    Platform.runLater(() -> {
-                                        statusLabel.setText(state);
-                                    });
-                                }
-                            }
+                            crawlProcessListener
                     )
             );
         } catch (Exception ex) {
@@ -463,13 +525,17 @@ public class OldHomePanelController {
     }
 
     CrawlProcessListener crawlProcessListener = new CrawlProcessListener() {
-
         @Override
-        public void onPushState(String storeSign, String state) {
-            DataUtils.updateStatus(storeSign, state);
-            Platform.runLater(() -> {
-                statusLabel.setText(state);
-            });
+        public void onPushState(String signature, String pageNumber, String status) {
+            String key = signature + "_" + pageNumber;
+            CrawlTaskStatus taskStatus = crawlTaskMap.get(key);
+            if (taskStatus != null) {
+                Platform.runLater(() -> {
+                    taskStatus.setProgress(status);
+                    taskStatus.setSignature(signature);
+                    taskStatus.setPageNumber(Integer.parseInt(pageNumber));
+                });
+            }
         }
     };
 

@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.util.Callback?>
 <VBox xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.phanduy.aliexscrap.OldHomePanelController">
     <MenuBar>
         <menus>
@@ -15,7 +16,7 @@
     </MenuBar>
 
     <AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
-                prefWidth="500.0" prefHeight="400.0">
+                prefWidth="500.0" prefHeight="700.0">
 
         <children>
             <VBox spacing="10" AnchorPane.topAnchor="10" AnchorPane.bottomAnchor="10"
@@ -73,13 +74,14 @@
                             onAction="#onStart"/>
                 </HBox>
 
-                <HBox spacing="10" alignment="CENTER_LEFT">
-                    <Label fx:id="crawlSignLabel" text="" visible="true" style="-fx-text-fill: blue;"/>
-                </HBox>
-
-                <HBox spacing="10" alignment="CENTER_LEFT">
-                    <Label fx:id="statusLabel" text="" visible="true" style="-fx-text-fill: blue;"/>
-                </HBox>
+                <!-- TableView trạng thái crawl -->
+                <TableView fx:id="crawlTable" prefHeight="200" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="signatureCol" text="Signature" prefWidth="150"/>
+                        <TableColumn fx:id="pageCol" text="Page Number" prefWidth="100"/>
+                        <TableColumn fx:id="progressCol" text="Progress" prefWidth="150"/>
+                    </columns>
+                </TableView>
 
                 <HBox spacing="10" alignment="CENTER_LEFT">
                     <Label fx:id="downloadImageLabel" text="" visible="true" style="-fx-text-fill: blue;"/>

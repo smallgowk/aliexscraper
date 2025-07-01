@@ -11,6 +11,8 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.POST;
 
+import java.util.List;
+
 public interface ApiService {
     @POST("pltool/getStoreInfos")
     Call<ApiResponse<StoreInfoResponseData>> getFullStoreInfo(@Body GetStoreInfosReq request);
@@ -47,4 +49,7 @@ public interface ApiService {
 
     @POST("clientinfo/checkserial/new")
     Call<ApiResponse<CheckInfoResponse>> checkSerialInfo(@Body CheckInfoReq request);
+
+    @POST("ggsheet/getAliexProducts")
+    Call<ApiResponse<List<String>>> getAliexProducts(@Body GetAliexProductsReq request);
 }

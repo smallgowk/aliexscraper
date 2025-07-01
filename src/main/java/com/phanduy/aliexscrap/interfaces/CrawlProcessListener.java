@@ -14,10 +14,10 @@ import com.phanduy.aliexscrap.model.response.ResponseObj;
  */
 public interface CrawlProcessListener {
     public void onPushState(String storeSign, String state);
-    public void onPushErrorRequest(String storeSign, ResponseObj responseObj);
-    public void onStartProcess(String storeSign, String info);
-    public void onStop(String storeSign);
-    public void onStopToLogin(String currentUrl, String storeSign);
-    public void onFinishPage(String storeSign);
-    public void onExit();
+//    public void onPushErrorRequest(String storeSign, ResponseObj responseObj);
+//    public void onStartProcess(String storeSign, String info);
+//    public void onStop(String storeSign);
+//    public void onStopToLogin(String currentUrl, String storeSign);
+//    public void onFinishPage(String storeSign);
+//    public void onExit();
 }

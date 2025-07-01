@@ -44,6 +44,7 @@ module com.phanduy.aliexscrap.aliexscrapper {
 
     // Logging
     requires log4j;
+    requires org.java_websocket;
 
     // Cho phép các package bên ngoài dùng FXML controller của bạn (nếu có)
     opens com.phanduy.aliexscrap to javafx.fxml, com.google.gson;

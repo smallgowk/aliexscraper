@@ -27,6 +27,10 @@
                     <Separator HBox.hgrow="ALWAYS"/>
                 </HBox>
                 <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Disk SN:" minWidth="85"/>
+                    <TextField fx:id="diskField" HBox.hgrow="ALWAYS" editable="false"/>
+                </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
                     <Label text="Config File:" minWidth="85"/>
                     <TextField fx:id="configFileField" HBox.hgrow="ALWAYS"/>
                     <Button fx:id="browseConfigFile" text="Browse..."
@@ -65,8 +69,8 @@
                 </Separator>
 
                 <HBox spacing="10" alignment="CENTER_LEFT">
-                    <Button fx:id="crawlButton" text="Start"
-                            onAction="#onCrawlClick"/>
+                    <Button fx:id="startButton" text="Start"
+                            onAction="#onStart"/>
                 </HBox>
 
                 <HBox spacing="10" alignment="CENTER_LEFT">

@@ -4,6 +4,7 @@ import com.phanduy.aliexscrap.config.Configs;
 import com.phanduy.aliexscrap.controller.DownloadManager;
 import com.phanduy.aliexscrap.controller.inputprocess.InputDataConfig;
 import com.phanduy.aliexscrap.controller.inputprocess.SnakeReadOrderInfoSvs;
+import com.phanduy.aliexscrap.controller.thread.CrawlExecutor;
 import com.phanduy.aliexscrap.controller.thread.ProcessCrawlRapidNoCrawlThread;
 import com.phanduy.aliexscrap.interfaces.CrawlProcessListener;
 import com.phanduy.aliexscrap.interfaces.DownloadListener;
@@ -30,22 +31,28 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.handshake.ServerHandshake;
+import java.net.URI;
 
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.prefs.Preferences;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class OldHomePanelController {
     @FXML private TextField amzProductTemplate1Field;
     @FXML private TextField outputField;
     @FXML private TextField configFileField;
+    @FXML private TextField diskField;
 
     @FXML private Button browseOutput;
     @FXML private Button browseConfigFile;
     @FXML private Button browseTemplate1;
-    @FXML private Button crawlButton;
+    @FXML private Button startButton;
 
     @FXML private Label crawlSignLabel;
     @FXML private Label statusLabel;
@@ -54,85 +61,23 @@ public class OldHomePanelController {
     // Preferences API để cache setting
     private Preferences prefs;
 
-    ProcessCrawlRapidNoCrawlThread processCrawlThread;
+    WebSocketClient client;
+
+//    ProcessCrawlRapidNoCrawlThread processCrawlThread;
 
     @FXML
-    public void initialize() {
+    public void initialize() throws URISyntaxException {
         prefs = Preferences.userNodeForPackage(OldHomePanelController.class);
         String version = VersionUtils.getAppVersionFromResource();
         prefs.put("Version", version);
+        diskField.setText(ComputerIdentifier.getDiskSerialNumber());
 
         loadSettings();
         DownloadManager.getInstance().setListener(downloadListener);
-//        DownloadManager.getInstance().testDownload(
-//                "https://ae01.alicdn.com/kf/S1371cc3fa6474ca9b04cf15a8643b75eI/4PCS-Privacy-Screen-Protector-For-iPhone-14-Pro-Max-16-Pro-Anti-Spy-Glass-For-iPhone.jpg",
-//                    "D:\\Data\\Dropship\\Products\\Images\\Jewelry\\iphone\\3256806491907393\\1.jpg"
-//                );
-//
-//        DownloadManager.getInstance().testDownload(
-//                "https://cdn.britannica.com/69/177069-050-5F685982/Anne-Bonny-Calico-Jack-Mary-Read-crew.jpg",
-//                "D:\\Data\\Dropship\\Products\\Images\\Jewelry\\iphone\\3256806491907393\\2.jpg"
-//        );
-
-//        String imageUrl = "https://ae01.alicdn.com/kf/S1371cc3fa6474ca9b04cf15a8643b75eI/4PCS-Privacy-Screen-Protector-For-iPhone-14-Pro-Max-16-Pro-Anti-Spy-Glass-For-iPhone.jpg";
-//        String targetPath = "downloaded_image.jpg";
-//        String key = "download_001";
-//
-//        DownloadListener listener = new DownloadListener() {
-//            @Override
-//            public void onComplete(String key) {
-//                System.out.println("Download hoàn thành cho key: " + key);
-//            }
-//        };
-//
-//        ImageDownloader downloader = new ImageDownloader(imageUrl, targetPath, key, listener);
-//
-//        // Chạy trong thread mới
-//        Thread downloadThread = new Thread(downloader);
-//        downloadThread.start();
+        startButton.setVisible(false);
         ThreadManager.getInstance().submitTask(
                 () -> {
                     try {
-
-//                        String url = "https://api-sg.aliexpress.com";
-//                        String appkey = "515692";
-//                        String appSecret = "huVduSIdpcGnA17srissOCAosLYKBneF";
-//                        String action = "/auth/token/create";
-//
-//
-//                        IopClientImpl client = new IopClientImpl(url, appkey, appSecret);
-//                        IopRequest request = new IopRequest();
-//                        request.setApiName("aliexpress.ds.product.wholesale.get");
-//                        request.addApiParameter("ship_to_country", "US");
-//                        request.addApiParameter("product_id", "1005003784285827");
-//                        request.addApiParameter("target_currency", "USD");
-//                        request.addApiParameter("target_language", "en");
-//                        request.addApiParameter("remove_personal_benefit", "false");
-//
-//
-////                        request.setApiName(action);
-////                        request.addApiParameter("code", "3_515692_7emlFdEahsy17b01D9Wp6bq917069");
-////                        request.addApiParameter("uuid", "uuid");
-//
-////                        request.setApiName("aliexpress.ds.feed.itemids.get");
-////                        request.addApiParameter("page_size", "10");
-////                        request.addApiParameter("category_id", "21");
-////                        request.addApiParameter("feed_name", "DS bestseller");
-////                        request.addApiParameter("search_id", "abc123");
-////                        IopResponse response = client.execute(request, "50000201412dy6gsdjsDRQib13b08fbbdjSiszUlKFLhWfwzBdxAOwhtuaLP0XRkIq0h", Protocol.TOP);
-//
-//                        IopResponse response = null;
-//                        try {
-////                            response = client.execute(request, Protocol.GOP);
-//                            response = client.execute(request, "50000201412dy6gsdjsDRQib13b08fbbdjSiszUlKFLhWfwzBdxAOwhtuaLP0XRkIq0h", Protocol.TOP);
-////                            System.out.println("Success!");
-//                            System.out.println("Success: " + response.getGopResponseBody());
-//                            Thread.sleep(10);
-//                        } catch (ApiException e) {
-//                            e.printStackTrace();
-//                            System.out.println("Faile: ");
-//                        }
-
                         CheckInfoResponse checkInfoResponse = ApiCall.getInstance().checkInfo(
                                 new CheckInfoReq(
                                         version,
@@ -161,6 +106,8 @@ public class OldHomePanelController {
                         } else {
                             prefs.putBoolean("Latest", checkInfoResponse.isLatest());
                             prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
+                            startButton.setVisible(true);
+//                            initSocket();
                         }
 
                     } catch (Exception e) {
@@ -170,7 +117,70 @@ public class OldHomePanelController {
                 }
         );
 
+        // --- WebSocket STOMP logic ---
 
+    }
+
+    private void initSocket() throws URISyntaxException {
+        client = new WebSocketClient(new URI("ws://iamhere.vn:89/ws/websocket")) {
+            private boolean isConnected = false;
+            @Override
+            public void onOpen(ServerHandshake handshakedata) {
+                System.out.println("Duyuno Connected");
+                // Gửi frame CONNECT STOMP
+                String connectFrame = "CONNECT\naccept-version:1.2\nheart-beat:10000,10000\n\n\u0000";
+                this.send(connectFrame);
+                Platform.runLater(() -> {
+                    startButton.setText("Stop");
+                });
+            }
+
+            @Override
+            public void onMessage(String message) {
+                System.out.println("Duyuno Received: " + message);
+                if (message.startsWith("CONNECTED")) {
+                    // Sau khi nhận CONNECTED, gửi SUBSCRIBE tới /topic/messages
+                    String subscribeFrame = "SUBSCRIBE\nid:sub-0\ndestination:/topic/messages\n\n\u0000";
+                    this.send(subscribeFrame);
+                    isConnected = true;
+                } else if (message.startsWith("MESSAGE")) {
+                    // Xử lý message thực tế từ topic
+                    System.out.println("Nhận message từ /topic/messages: " + message);
+                    // Bóc tách phần JSON cuối cùng của message
+                    int jsonStart = message.lastIndexOf("\n{\"");
+                    if (jsonStart != -1) {
+                        String json = message.substring(jsonStart + 1).trim();
+                        try {
+                            JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
+                            String diskSerialNumber = obj.has("diskSerialNumber") ? obj.get("diskSerialNumber").getAsString() : null;
+                            String signature = obj.has("signature") ? obj.get("signature").getAsString() : null;
+                            String pageNumber = obj.has("pageNumber") ? obj.get("pageNumber").getAsString() : null;
+                            if (ComputerIdentifier.getDiskSerialNumber().equals(diskSerialNumber) && signature != null && pageNumber != null) {
+                                startCrawling(signature, pageNumber);
+                            }
+                        } catch (Exception e) {
+                            System.out.println("Lỗi parse JSON từ message: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onClose(int code, String reason, boolean remote) {
+                System.out.println("Duyuno Closed: " + reason);
+                Platform.runLater(() -> {
+                    startButton.setText("Start");
+                });
+            }
+
+            @Override
+            public void onError(Exception ex) {
+                ex.printStackTrace();
+                Platform.runLater(() -> {
+                    startButton.setText("Start");
+                });
+            }
+        };
     }
 
     private void showInvalidInfo(String message) {
@@ -338,14 +348,14 @@ public class OldHomePanelController {
     }
 
     @FXML
-    private void onCrawlClick() {
-        if (processCrawlThread != null && !processCrawlThread.isStop) {
-            processCrawlThread.doStop();
+    private void onStart() throws URISyntaxException {
+        if (client != null && client.isOpen()) {
+            client.close();
+            client = null;
+            CrawlExecutor.shutdown();
+            startButton.setText("Start");
             return;
         }
-
-        downloadImageLabel.setText("");
-        DownloadManager.getInstance().clearData();
 
         String configFile = configFileField.getText();
         if (StringUtils.isEmpty(configFile)) {
@@ -381,6 +391,13 @@ public class OldHomePanelController {
 
         Configs.TOOL_DATA_PATH = outputField.getText();
         Configs.updateDataPath();
+        initSocket();
+        client.connect();
+    }
+
+    private void startCrawling(String signature, String pageNumber) {
+        downloadImageLabel.setText("");
+        DownloadManager.getInstance().clearData();
 
         InputDataConfig inputDataConfig = null;
         try {
@@ -397,17 +414,13 @@ public class OldHomePanelController {
         }
         DataUtils.updateAllStores(inputDataConfig.listStores);
 
+        String templateFilePath = amzProductTemplate1Field.getText();
         boolean isOldTemplate = ExcelUtils.isOldTemplate(templateFilePath);
         if (isOldTemplate) {
             inputDataConfig.params.put("template", "");
         } else {
             inputDataConfig.params.put("template", "NewTemplate");
         }
-
-        if (processCrawlThread != null) {
-            processCrawlThread.doStop();
-        }
-
         BaseStoreOrderInfo storeOrderInfo = null;
         try {
             storeOrderInfo = inputDataConfig.listStores.get(0);
@@ -422,12 +435,22 @@ public class OldHomePanelController {
             return;
         }
         try {
-            processCrawlThread = new ProcessCrawlRapidNoCrawlThread(
-                    storeOrderInfo,
-                    inputDataConfig.params,
-                    crawlProcessListener
+            CrawlExecutor.executeThread(
+                    new ProcessCrawlRapidNoCrawlThread(
+                            storeOrderInfo,
+                            inputDataConfig.params,
+                            signature,
+                            pageNumber,
+                            new CrawlProcessListener() {
+                                @Override
+                                public void onPushState(String storeSign, String state) {
+                                    Platform.runLater(() -> {
+                                        statusLabel.setText(state);
+                                    });
+                                }
+                            }
+                    )
             );
-            processCrawlThread.start();
         } catch (Exception ex) {
             try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
                 fw.write("Exception when creating or starting thread crawl: " + ex.toString() + "\n");
@@ -446,44 +469,6 @@ public class OldHomePanelController {
             DataUtils.updateStatus(storeSign, state);
             Platform.runLater(() -> {
                 statusLabel.setText(state);
-            });
-        }
-
-        @Override
-        public void onPushErrorRequest(String storeSign, ResponseObj responseObj) {
-
-        }
-
-        @Override
-        public void onStop(String storeSign) {
-            Platform.runLater(() -> {
-                crawlButton.setText("Start");
-            });
-        }
-
-        @Override
-        public void onStartProcess(String storeSign, String info) {
-            Platform.runLater(() -> {
-                crawlSignLabel.setText(info);
-                crawlButton.setText("Stop");
-            });
-        }
-
-        @Override
-        public void onStopToLogin(String currentUrl, String storeSign) {
-        }
-
-        @Override
-        public void onFinishPage(String storeSign) {
-            Platform.runLater(() -> {
-                crawlButton.setText("Start");
-            });
-        }
-
-        @Override
-        public void onExit() {
-            Platform.runLater(() -> {
-                crawlButton.setText("Start");
             });
         }
     };

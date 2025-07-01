@@ -14,18 +14,11 @@ import com.phanduy.aliexscrap.controller.CacheSvs;
 import com.phanduy.aliexscrap.controller.transform.ProcessStoreInfoSvs;
 import com.google.gson.Gson;
 import com.phanduy.aliexscrap.model.aliex.store.inputdata.BaseStoreOrderInfo;
-import com.phanduy.aliexscrap.model.request.CheckConfigsReq;
-import com.phanduy.aliexscrap.model.request.GetPageDataRapidDataReq;
-import com.phanduy.aliexscrap.model.request.SearchRapidReq;
-import com.phanduy.aliexscrap.model.request.TransformRapidDataReq;
+import com.phanduy.aliexscrap.model.request.*;
 import com.phanduy.aliexscrap.api.ApiCall;
 import com.phanduy.aliexscrap.api.ApiClient;
 import com.phanduy.aliexscrap.api.ApiService;
-import com.phanduy.aliexscrap.model.request.GetStoreInfoRapidDataReq;
-import com.phanduy.aliexscrap.model.response.ConfigInfo;
-import com.phanduy.aliexscrap.model.response.GetPageRapidData;
-import com.phanduy.aliexscrap.model.response.GetStoreInfoRapidData;
-import com.phanduy.aliexscrap.model.response.TransformCrawlResponse;
+import com.phanduy.aliexscrap.model.response.*;
 import com.phanduy.aliexscrap.utils.ComputerIdentifier;
 import com.phanduy.aliexscrap.utils.DialogUtil;
 import com.phanduy.aliexscrap.utils.StringUtils;
@@ -33,6 +26,7 @@ import com.phanduy.aliexscrap.utils.DataUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  *
@@ -46,13 +40,19 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
     ProcessStoreInfoSvs processStoreInfoSvs;
     ApiService apiService;
     ApiService apiServiceNoLog;
+    String signature;
+    String pageNumber;
 
 //    StringBuffer sb;
     public ProcessCrawlRapidNoCrawlThread(
             BaseStoreOrderInfo baseStoreOrderInfo,
             HashMap<String, String> toolParams,
+            String signature,
+            String pageNumber,
             CrawlProcessListener crawlProcessListener
     ) {
+        this.signature = signature;
+        this.pageNumber = pageNumber;
         try {
             this.baseStoreOrderInfo = baseStoreOrderInfo;
             this.toolParams = toolParams;
@@ -117,13 +117,9 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             Configs.updateConfig(configInfo);
 
             AliexStoreInfo aliexStoreInfo = TransformStoreInput.getInstance().transformRawData(baseStoreOrderInfo);
+            aliexStoreInfo.setStoreSign(signature);
             String computerSerial = ComputerIdentifier.getDiskSerialNumber().replaceAll(" ", "-");
-
-            if (StringUtils.isEmpty(aliexStoreInfo.query)) {
-                processStore(aliexStoreInfo, computerSerial);
-            } else {
-                processQuery(aliexStoreInfo, computerSerial);
-            }
+            processStore(aliexStoreInfo, computerSerial);
         } catch (Exception ex) {
             try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
                 fw.write("[Thread] Exception: " + ex.toString() + "\n");
@@ -135,88 +131,25 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         }
     }
 
-    public void processQuery(AliexStoreInfo aliexStoreInfo, String computerSerial) {
-        try {
-            Gson gson = new Gson();
-            crawlProcessListener.onStartProcess(aliexStoreInfo.getStoreSign(), aliexStoreInfo.info);
-            long start = System.currentTimeMillis();
-            crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting aliex store info...");
-            processStoreInfoSvs.processStoreInfo(aliexStoreInfo);
-            crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting product info...");
-            SearchRapidReq searchRapidReq = new SearchRapidReq(
-                    aliexStoreInfo.query,
-                    computerSerial,
-                    "USD",
-                    aliexStoreInfo.region,
-                    Configs.regionMap.get(aliexStoreInfo.region),
-                    1
-            );
-            GetPageRapidData getPageRapidData = ApiCall.getInstance().searchPageData(searchRapidReq);
-            int page = 1;
-            while (getPageRapidData != null && getPageRapidData.items != null && !getPageRapidData.items.isEmpty()) {
-                getPageRapidData = processSearchData(aliexStoreInfo.query, computerSerial, getPageRapidData, aliexStoreInfo, page++);
-            }
-            crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Done (" + successCount + "/" + totalCount + ")");
-            crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
-        } catch (Exception ex) {
-            try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
-                fw.write("[Thread] processQuery Exception: " + ex.toString() + "\n");
-                for (StackTraceElement ste : ex.getStackTrace()) {
-                    fw.write("    at " + ste.toString() + "\n");
-                }
-            } catch (Exception e) {}
-            ex.printStackTrace();
-        }
-    }
-
     public void processStore(AliexStoreInfo aliexStoreInfo, String computerSerial) {
         try {
-            Gson gson = new Gson();
-            String sellerId = null;
-            GetStoreInfoRapidDataReq getStoreInfoRapidDataReq = new GetStoreInfoRapidDataReq(
-                    aliexStoreInfo.productId,
-                    computerSerial,
-                    "USD",
-                    aliexStoreInfo.region,
-                    Configs.regionMap.get(aliexStoreInfo.region)
-            );
-            GetStoreInfoRapidData data = ApiCall.getInstance().getStoreInfoRapidData(getStoreInfoRapidDataReq);
-            if (data == null) {
-                DialogUtil.showInfoMessage(null, "Không xác định được thông tin seller!");
-                crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
-                crawlProcessListener.onExit();
-                return;
-            } else {
-                sellerId = data.sellerId;
-                aliexStoreInfo.setStoreId(data.storeId);
-                aliexStoreInfo.setInfo("Store: " + data.storeId + "             Seller: " + sellerId);
-                baseStoreOrderInfo.setStoreId(data.storeId);
-                DataUtils.updateStoreByProductId(baseStoreOrderInfo);
-            }
+            aliexStoreInfo.setStoreSign(signature);
             crawlProcessListener.onStartProcess(aliexStoreInfo.getStoreSign(), aliexStoreInfo.info);
-            long start = System.currentTimeMillis();
-            crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting aliex store info...");
             processStoreInfoSvs.processStoreInfo(aliexStoreInfo);
             crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Getting product info...");
-            GetPageDataRapidDataReq getPageDataRapidDataReq = new GetPageDataRapidDataReq(
-                    aliexStoreInfo.getStoreSign(),
-                    sellerId,
+            GetAliexProductsReq getAliexProductsReq = new GetAliexProductsReq(
                     computerSerial,
-                    "USD",
-                    aliexStoreInfo.region,
-                    Configs.regionMap.get(aliexStoreInfo.region),
-                    1
+                    signature,
+                    pageNumber
             );
-            GetPageRapidData getPageRapidData = ApiCall.getInstance().getPageData(getPageDataRapidDataReq);
-            int page = 1;
-            aliexStoreInfo.totalPage = getPageRapidData.totalPages;
-            while (page <= aliexStoreInfo.totalPage) {
-                if (StringUtils.isEmpty(Configs.template)) {
-                    getPageRapidData = processOldFlow(sellerId, computerSerial, getPageRapidData, aliexStoreInfo, page++);
-                } else {
-                    getPageRapidData = processNewFormatFlow(sellerId, computerSerial, getPageRapidData, aliexStoreInfo, page++);
-                }
+            List<String> getPageGGProducts = ApiCall.getInstance().getAliexProducts(getAliexProductsReq);
+
+            if (StringUtils.isEmpty(Configs.template)) {
+                processOldFlow(getPageGGProducts, aliexStoreInfo);
+            } else {
+                processNewFormatFlow(getPageGGProducts, aliexStoreInfo);
             }
+
             crawlProcessListener.onPushState(aliexStoreInfo.getStoreSign(), "Done (" + successCount + "/" + totalCount + ")");
             crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
         } catch (Exception ex) {
@@ -228,104 +161,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             } catch (Exception e) {}
             ex.printStackTrace();
         }
-    }
-
-    public GetPageRapidData processSearchData(String query, String computerSerial, GetPageRapidData getPageRapidData, AliexStoreInfo aliexStoreInfo, int page) {
-        if (isStop) {
-            return null;
-        }
-
-        int size = getPageRapidData.items.size();
-        totalCount += size;
-        int crawlCount = 0;
-        ArrayList<TransformCrawlResponse> listResults = new ArrayList<>();
-        
-        String keyCache = aliexStoreInfo.getKeyCache(toolParams);
-
-        for (int j = 0; j < size; j++) {
-            if (isStop) {
-                return null;
-            }
-            String productId = getPageRapidData.items.get(j);
-            crawlCount++;
-            TransformCrawlResponse res = CacheSvs.getInstance().getProductResFromCache(productId, keyCache);
-            if (res == null) {
-                TransformCrawlResponse data = null;
-                try {
-                    data = getProductDetail(productId, aliexStoreInfo);
-                    if (data != null) {
-                        res = data;
-                        CacheSvs.getInstance().saveProductInfo(data, keyCache);
-                    }
-                } catch (Exception e) {
-                    CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
-                    if (Configs.isStopByNoShipping && page == 1 && j == 9 && !isHasShip) {
-                        DialogUtil.showInfoMessage(null, "Store có nhiều sản phẩm không có ship. Tool sẽ dừng crawl store này để tiết kiệm request!");
-                        crawlProcessListener.onExit();
-                        return null;
-                    }
-                    processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, e.getMessage());
-                    crawlProcessListener.onPushState(
-                            aliexStoreInfo.getStoreSign(),
-                            processStoreInfoSvs.getStatusPageOnly(aliexStoreInfo.getStoreSign(), page, j, size)
-                    );
-                    System.out.println(productId + ": tranform fail " + page);
-                }
-            } 
-            
-            if (res != null && res.hasData()) {
-                isHasShip = true;
-                res.updateImageDownloads();
-                if (StringUtils.isEmpty(Configs.template)) {
-                    processStoreInfoSvs.processRapidProduct(
-                            productId,
-                            res,
-                            aliexStoreInfo,
-                            page,
-                            aliexStoreInfo.getStoreSign()
-                    );
-                } else {
-                    res.updateImageDownloads();
-                    listResults.add(res);
-                }
-                successCount++;
-            }
-            
-            if (!isStop) {
-                crawlProcessListener.onPushState(
-                        aliexStoreInfo.getStoreSign(),
-                        processStoreInfoSvs.getStatusPageOnly(aliexStoreInfo.getStoreSign(), page, j, size)
-                );
-            }
-        }
-
-        AliexPageInfo aliexPageInfo = new AliexPageInfo();
-        aliexPageInfo.setPageIndex(page);
-        aliexPageInfo.setTotalProduct(size);
-        aliexPageInfo.setStoreSign(aliexStoreInfo.getStoreSign());
-        if (StringUtils.isEmpty(Configs.template)) {
-            processStoreInfoSvs.processPageInfo(aliexPageInfo);
-        } else {
-            processStoreInfoSvs.processPageInfoNew(aliexStoreInfo, aliexPageInfo, page, listResults, baseStoreOrderInfo.getCategory());
-        }
-        
-        crawlProcessListener.onPushState(
-                aliexStoreInfo.getStoreSign(),
-                processStoreInfoSvs.getStatusPageOnlyWithFixedPercent(aliexStoreInfo.getStoreSign(), page, 100, size)
-        );
-        successCount += processStoreInfoSvs.getSuccessCount(aliexStoreInfo.getStoreSign(), page);
-        processStoreInfoSvs.clearMapData();
-
-        SearchRapidReq searchRapidReq = new SearchRapidReq(
-                aliexStoreInfo.query,
-                computerSerial,
-                "USD",
-                aliexStoreInfo.region,
-                Configs.regionMap.get(aliexStoreInfo.region),
-                page + 1
-        );
-
-        return ApiCall.getInstance().searchPageData(searchRapidReq);
     }
 
     public TransformCrawlResponse getProductDetail(String productId, AliexStoreInfo aliexStoreInfo) throws Exception {
@@ -344,23 +179,24 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 ApiCall.getInstance().getNewTemplateProduct(transformRapidDataReq);
     }
 
-    public GetPageRapidData processNewFormatFlow(String sellerId, String computerSerial, GetPageRapidData getPageRapidData, AliexStoreInfo aliexStoreInfo, int page) {
+    public void processNewFormatFlow(List<String> items, AliexStoreInfo aliexStoreInfo) throws Exception {
         if (isStop) {
-            return null;
+            return;
         }
 
-        int size = getPageRapidData.items.size();
+        int size = items.size();
         totalCount += size;
         int crawlCount = 0;
+        int page = Integer.parseInt(pageNumber);
         ArrayList<TransformCrawlResponse> listResults = new ArrayList<>();
         
         String keyCache = aliexStoreInfo.getKeyCache(toolParams);
 
         for (int j = 0; j < size; j++) {
             if (isStop) {
-                return null;
+                return;
             }
-            String productId = getPageRapidData.items.get(j);
+            String productId = items.get(j);
             TransformCrawlResponse res = CacheSvs.getInstance().getProductResFromCache(productId, keyCache);
             if (res == null) {
                 crawlCount++;
@@ -385,7 +221,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                     if (Configs.isStopByNoShipping && page == 1 && j == 9 && !isHasShip) {
                         DialogUtil.showInfoMessage(null, "Store có nhiều sản phẩm không có ship. Tool sẽ dừng crawl store này để tiết kiệm request!");
                         crawlProcessListener.onExit();
-                        return null;
+                        return;
                     }
                     processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, e.getMessage());
                 }
@@ -418,44 +254,31 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         );
         successCount += processStoreInfoSvs.getSuccessCount(aliexStoreInfo.getStoreSign(), page);
         processStoreInfoSvs.clearMapData();
-        if (page <= aliexStoreInfo.totalPage) {
-            GetPageDataRapidDataReq getPageDataRapidDataReq = new GetPageDataRapidDataReq(
-                    aliexStoreInfo.getStoreSign(),
-                    sellerId,
-                    computerSerial,
-                    "USD",
-                    aliexStoreInfo.region,
-                    Configs.regionMap.get(aliexStoreInfo.region),
-                    page + 1
-            );
-            return ApiCall.getInstance().getPageData(getPageDataRapidDataReq);
-        } else {
-            return null;
-        }
     }
 
-    public GetPageRapidData processOldFlow(String sellerId, String computerSerial, GetPageRapidData getPageRapidData, AliexStoreInfo aliexStoreInfo, int page) {
+    public void processOldFlow(List<String> getPageGGProducts, AliexStoreInfo aliexStoreInfo) throws Exception {
         if (isStop) {
-            return null;
+            return;
         }
 
-        if (getPageRapidData.items == null) {
-            return null;
+        if (getPageGGProducts == null) {
+            return;
         }
 
-        int size = getPageRapidData.items.size();
+        int size = getPageGGProducts.size();
         totalCount += size;
         int crawlCount = 0;
+        int page = Integer.parseInt(pageNumber);
 
         Gson gson = new Gson();
-        
+
         String keyCache = aliexStoreInfo.getKeyCache(toolParams);
 
         for (int j = 0; j < size; j++) {
             if (isStop) {
-                return null;
+                return;
             }
-            String productId = getPageRapidData.items.get(j);
+            String productId = getPageGGProducts.get(j);
             TransformCrawlResponse res = CacheSvs.getInstance().getProductResFromCache(productId, keyCache);
             if (res == null) {
                 crawlCount++;
@@ -485,7 +308,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                     if (Configs.isStopByNoShipping && page == 1 && j == 9 && !isHasShip) {
                         DialogUtil.showInfoMessage(null, "Store có nhiều sản phẩm không có ship. Tool sẽ dừng crawl store này để tiết kiệm request!");
                         crawlProcessListener.onExit();
-                        return null;
+                        return;
                     }
                     processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, e.getMessage());
                 }
@@ -522,19 +345,5 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         );
         successCount += processStoreInfoSvs.getSuccessCount(aliexStoreInfo.getStoreSign(), page);
         processStoreInfoSvs.clearMapData();
-        if (page <= aliexStoreInfo.totalPage) {
-            GetPageDataRapidDataReq getPageDataRapidDataReq = new GetPageDataRapidDataReq(
-                    aliexStoreInfo.getStoreSign(),
-                    sellerId,
-                    computerSerial,
-                    "USD",
-                    aliexStoreInfo.region,
-                    Configs.regionMap.get(aliexStoreInfo.region),
-                    page + 1
-            );
-            return ApiCall.getInstance().getPageData(getPageDataRapidDataReq);
-        } else {
-            return null;
-        }
     }
 }

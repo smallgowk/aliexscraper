@@ -133,6 +133,9 @@ dependencies {
   // Test dependencies
   testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
   testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+
+  // Java-WebSocket
+  implementation 'org.java-websocket:Java-WebSocket:1.6.0'
 }
 
 test {

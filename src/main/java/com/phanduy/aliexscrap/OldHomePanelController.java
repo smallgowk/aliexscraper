@@ -499,9 +499,11 @@ public class OldHomePanelController {
         }
 
         String key = signature + "_" + pageNumber;
-        CrawlTaskStatus status = new CrawlTaskStatus(signature, Integer.parseInt(pageNumber), "Waiting");
-        crawlTaskMap.put(key, status);
-        Platform.runLater(() -> crawlTaskList.add(status));
+        if (!crawlTaskMap.containsKey(key)) {
+            CrawlTaskStatus status = new CrawlTaskStatus(signature, Integer.parseInt(pageNumber), "Waiting");
+            crawlTaskMap.put(key, status);
+            Platform.runLater(() -> crawlTaskList.add(status));
+        }
 
         try {
             CrawlExecutor.executeThread(

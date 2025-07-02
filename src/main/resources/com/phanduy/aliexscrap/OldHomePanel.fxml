@@ -72,19 +72,23 @@
                 <HBox spacing="10" alignment="CENTER_LEFT">
                     <Button fx:id="startButton" text="Start"
                             onAction="#onStart"/>
-                    <Label fx:id="statusLabel" text="" visible="false" style="-fx-text-fill: blue;"/>
+                    <Region fx:id="leftSpacer" HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="statusLabel" text="" visible="false" style="-fx-text-fill: blue;" alignment="CENTER"/>
+                    <Region fx:id="rightSpacer" HBox.hgrow="ALWAYS"/>
                 </HBox>
 
                 <!-- TableView trạng thái crawl -->
                 <TableView fx:id="crawlTable" prefHeight="200" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="signatureCol" text="Signature" prefWidth="150"/>
+                        <TableColumn fx:id="signatureCol" text="Signature" prefWidth="250"/>
                         <TableColumn fx:id="pageCol" text="Page Number" prefWidth="100"/>
-                        <TableColumn fx:id="progressCol" text="Progress" prefWidth="150"/>
+                        <TableColumn fx:id="progressCol" text="Progress" prefWidth="128"/>
                     </columns>
                 </TableView>
 
                 <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button fx:id="clearButton" text="Clear"
+                            onAction="#onClearButton"/>
                     <Label fx:id="downloadImageLabel" text="" visible="true" style="-fx-text-fill: blue;"/>
                 </HBox>
             </VBox>

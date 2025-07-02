@@ -52,6 +52,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javafx.scene.control.TableCell;
 import javafx.util.Callback;
+import javafx.scene.layout.Region;
+
+import static com.phanduy.aliexscrap.api.ApiClient.SOCKET_URL;
 
 public class OldHomePanelController {
     @FXML private TextField amzProductTemplate1Field;
@@ -63,6 +66,7 @@ public class OldHomePanelController {
     @FXML private Button browseConfigFile;
     @FXML private Button browseTemplate1;
     @FXML private Button startButton;
+    @FXML private Button clearButton;
 
     @FXML private Label downloadImageLabel;
     @FXML private Label statusLabel;
@@ -71,6 +75,9 @@ public class OldHomePanelController {
     @FXML private TableColumn<CrawlTaskStatus, String> signatureCol;
     @FXML private TableColumn<CrawlTaskStatus, Number> pageCol;
     @FXML private TableColumn<CrawlTaskStatus, String> progressCol;
+
+    @FXML private Region leftSpacer;
+    @FXML private Region rightSpacer;
 
     private ObservableList<CrawlTaskStatus> crawlTaskList = FXCollections.observableArrayList();
     private Map<String, CrawlTaskStatus> crawlTaskMap = new ConcurrentHashMap<>();
@@ -112,7 +119,8 @@ public class OldHomePanelController {
 
         loadSettings();
         DownloadManager.getInstance().setListener(downloadListener);
-        startButton.setVisible(false);
+        startButton.setDisable(true);
+        clearButton.setDisable(true);
         ThreadManager.getInstance().submitTask(
                 () -> {
                     try {
@@ -123,45 +131,50 @@ public class OldHomePanelController {
                                         "newpltool"
                                 )
                         );
-                        Platform.runLater(() -> {
-                        int code = checkInfoResponse.getResultCode();
-//                            int code = -9;
-                            if (code != 1) {
-                                switch (code) {
-                                    case CheckInfoResponse.SERIAL_INVALID:
-//                                    showInvalidInfo("Máy tính cài đặt không hợp lệ. Liên hệ 0972071089 để được xác thực!");
-                                        statusLabel.setVisible(true);
-                                        statusLabel.setText("Máy tính cài đặt không hợp lệ. Liên hệ 0972071089 để được xác thực!");
-                                        break;
-                                    case CheckInfoResponse.TIME_LIMIT:
-//                                    showInvalidInfo("Máy tính đã hết thời gian sử dụng. Liên hệ 0972071089 để được xử lý!");
-                                        statusLabel.setVisible(true);
-                                        statusLabel.setText("Máy tính đã hết thời gian sử dụng. Liên hệ 0972071089 để được xử lý!");
-                                        break;
-                                    case CheckInfoResponse.PRODUCT_LIMIT:
-//                                    showInvalidInfo("Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
-                                        statusLabel.setVisible(true);
-                                        statusLabel.setText("Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
-                                        break;
-                                    case CheckInfoResponse.VERSION_INVALID:
-//                                    showInvalidVersion("Version app đã quá cũ! Vui lòng cập nhật version mới để sử dụng!", checkInfoResponse.getLatestVersion());
-                                        statusLabel.setVisible(true);
-                                        statusLabel.setText("Version app đã quá cũ! Vui lòng cập nhật version mới để sử dụng!");
-                                        break;
-                                    default:
-                                        showInvalidInfo("Server error!. Liên hệ 0972071089 để được xử lý!");
+                        if (checkInfoResponse == null) {
+                            Platform.runLater(() -> {
+                                statusLabel.setVisible(true);
+                                statusLabel.setText("Kết nối server thất bại!");
+                            });
+                        } else {
+                            Platform.runLater(() -> {
+                                int code = checkInfoResponse.getResultCode();
+                                if (code != 1) {
+                                    switch (code) {
+                                        case CheckInfoResponse.SERIAL_INVALID:
+                                            statusLabel.setVisible(true);
+                                            statusLabel.setText("Máy tính cài đặt không hợp lệ. Liên hệ 0972071089 để được xác thực!");
+                                            break;
+                                        case CheckInfoResponse.TIME_LIMIT:
+                                            statusLabel.setVisible(true);
+                                            statusLabel.setText("Máy tính đã hết thời gian sử dụng. Liên hệ 0972071089 để được xử lý!");
+                                            break;
+                                        case CheckInfoResponse.PRODUCT_LIMIT:
+                                            statusLabel.setVisible(true);
+                                            statusLabel.setText("Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
+                                            break;
+                                        case CheckInfoResponse.VERSION_INVALID:
+                                            statusLabel.setVisible(true);
+                                            statusLabel.setText("Version app đã quá cũ! Vui lòng cập nhật version mới để sử dụng!");
+                                            break;
+                                        default:
+                                            showInvalidInfo("Server error!. Liên hệ 0972071089 để được xử lý!");
+                                    }
+                                } else {
+                                    prefs.putBoolean("Latest", checkInfoResponse.isLatest());
+                                    prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
+                                    startButton.setDisable(false);
+                                    statusLabel.setVisible(false);
                                 }
-                            } else {
-                                prefs.putBoolean("Latest", checkInfoResponse.isLatest());
-                                prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
-                                startButton.setVisible(true);
-                                statusLabel.setVisible(false);
-                            }
-                        });
-
+                            });
+                        }
                     } catch (Exception e) {
-                        System.out.println("" + e.getMessage());
-                        showInvalidInfo("Có lỗi xảy ra!");
+                        System.out.println("Error" + e.getMessage());
+//                        showInvalidInfo("Có lỗi xảy ra!");
+                        Platform.runLater(() -> {
+                            statusLabel.setVisible(true);
+                            statusLabel.setText("Kết nối server thất bại!");
+                        });
                     }
                 }
         );
@@ -194,10 +207,22 @@ public class OldHomePanelController {
         signatureCol.setCellFactory(centerStringCellFactory);
         pageCol.setCellFactory(centerNumberCellFactory);
         progressCol.setCellFactory(centerStringCellFactory);
+
+        // Đảm bảo layout statusLabel đúng khi khởi tạo
+        updateStatusLabelLayout();
+        // Theo dõi thay đổi visibility của startButton
+        startButton.visibleProperty().addListener((obs, oldVal, newVal) -> updateStatusLabelLayout());
+
+        // Listener để disable clearButton khi table rỗng
+        crawlTaskList.addListener((javafx.collections.ListChangeListener<CrawlTaskStatus>) change -> {
+            if (crawlTaskList.isEmpty()) {
+                clearButton.setDisable(true);
+            }
+        });
     }
 
     private void initSocket() throws URISyntaxException {
-        client = new WebSocketClient(new URI("ws://iamhere.vn:89/ws/websocket")) {
+        client = new WebSocketClient(new URI(SOCKET_URL)) {
             private boolean isConnected = false;
             @Override
             public void onOpen(ServerHandshake handshakedata) {
@@ -302,10 +327,17 @@ public class OldHomePanelController {
         }
     }
 
-
     @FXML
     private void onOpenConfigFile() {
         FileOpener.openFileOrFolder(configFileField.getText());
+    }
+
+    @FXML
+    private void onClearButton() {
+        crawlTaskList.clear();
+        crawlTaskMap.clear();
+        clearButton.setDisable(true);
+        CrawlExecutor.shutdownNow();
     }
 
     @FXML
@@ -432,8 +464,12 @@ public class OldHomePanelController {
         if (client != null && client.isOpen()) {
             client.close();
             client = null;
-            CrawlExecutor.shutdown();
+            CrawlExecutor.shutdownNow();
             startButton.setText("Start");
+            // Enable clearButton nếu table có data
+            if (!crawlTaskList.isEmpty()) {
+                clearButton.setDisable(false);
+            }
             return;
         }
 
@@ -601,5 +637,13 @@ public class OldHomePanelController {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void updateStatusLabelLayout() {
+        boolean startVisible = startButton.isVisible();
+        leftSpacer.setVisible(true);
+        rightSpacer.setVisible(startVisible);
+        leftSpacer.setManaged(true);
+        rightSpacer.setManaged(startVisible);
     }
 }

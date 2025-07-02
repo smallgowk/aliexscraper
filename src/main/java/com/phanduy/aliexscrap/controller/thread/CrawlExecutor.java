@@ -5,7 +5,7 @@ import java.util.concurrent.Executors;
 
 public class CrawlExecutor {
 
-    private static final ExecutorService executor = Executors.newFixedThreadPool(10);
+    private static final ExecutorService executor = Executors.newFixedThreadPool(2);
 
     public static void executeAsync(Runnable task) {
         executor.submit(task);

@@ -65,6 +65,7 @@ public class OldHomePanelController {
     @FXML private Button startButton;
 
     @FXML private Label downloadImageLabel;
+    @FXML private Label statusLabel;
 
     @FXML private TableView<CrawlTaskStatus> crawlTable;
     @FXML private TableColumn<CrawlTaskStatus, String> signatureCol;
@@ -122,30 +123,41 @@ public class OldHomePanelController {
                                         "newpltool"
                                 )
                         );
+                        Platform.runLater(() -> {
                         int code = checkInfoResponse.getResultCode();
-                        if (code != 1) {
-                            switch (code) {
-                                case CheckInfoResponse.SERIAL_INVALID:
-                                    showInvalidInfo("Máy tính cài đặt không hợp lệ. Liên hệ 0972071089 để được xác thực!");
-                                    break;
-                                case CheckInfoResponse.TIME_LIMIT:
-                                    showInvalidInfo("Máy tính đã hết thời gian sử dụng. Liên hệ 0972071089 để được xử lý!");
-                                    break;
-                                case CheckInfoResponse.PRODUCT_LIMIT:
-                                    showInvalidInfo("Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
-                                    break;
-                                case CheckInfoResponse.VERSION_INVALID:
-                                    showInvalidVersion("Version app đã quá cũ! Vui lòng cập nhật version mới để sử dụng!", checkInfoResponse.getLatestVersion());
-                                    break;
-                                default:
-                                    showInvalidInfo("Server error!. Liên hệ 0972071089 để được xử lý!");
+//                            int code = -9;
+                            if (code != 1) {
+                                switch (code) {
+                                    case CheckInfoResponse.SERIAL_INVALID:
+//                                    showInvalidInfo("Máy tính cài đặt không hợp lệ. Liên hệ 0972071089 để được xác thực!");
+                                        statusLabel.setVisible(true);
+                                        statusLabel.setText("Máy tính cài đặt không hợp lệ. Liên hệ 0972071089 để được xác thực!");
+                                        break;
+                                    case CheckInfoResponse.TIME_LIMIT:
+//                                    showInvalidInfo("Máy tính đã hết thời gian sử dụng. Liên hệ 0972071089 để được xử lý!");
+                                        statusLabel.setVisible(true);
+                                        statusLabel.setText("Máy tính đã hết thời gian sử dụng. Liên hệ 0972071089 để được xử lý!");
+                                        break;
+                                    case CheckInfoResponse.PRODUCT_LIMIT:
+//                                    showInvalidInfo("Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
+                                        statusLabel.setVisible(true);
+                                        statusLabel.setText("Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
+                                        break;
+                                    case CheckInfoResponse.VERSION_INVALID:
+//                                    showInvalidVersion("Version app đã quá cũ! Vui lòng cập nhật version mới để sử dụng!", checkInfoResponse.getLatestVersion());
+                                        statusLabel.setVisible(true);
+                                        statusLabel.setText("Version app đã quá cũ! Vui lòng cập nhật version mới để sử dụng!");
+                                        break;
+                                    default:
+                                        showInvalidInfo("Server error!. Liên hệ 0972071089 để được xử lý!");
+                                }
+                            } else {
+                                prefs.putBoolean("Latest", checkInfoResponse.isLatest());
+                                prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
+                                startButton.setVisible(true);
+                                statusLabel.setVisible(false);
                             }
-                        } else {
-                            prefs.putBoolean("Latest", checkInfoResponse.isLatest());
-                            prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
-                            startButton.setVisible(true);
-//                            initSocket();
-                        }
+                        });
 
                     } catch (Exception e) {
                         System.out.println("" + e.getMessage());
@@ -195,6 +207,8 @@ public class OldHomePanelController {
                 this.send(connectFrame);
                 Platform.runLater(() -> {
                     startButton.setText("Stop");
+                    statusLabel.setVisible(true);
+                    statusLabel.setText("Chờ nhận tín hiệu từ extension!");
                 });
             }
 
@@ -233,6 +247,7 @@ public class OldHomePanelController {
                 System.out.println("Duyuno Closed: " + reason);
                 Platform.runLater(() -> {
                     startButton.setText("Start");
+                    statusLabel.setVisible(false);
                 });
             }
 
@@ -241,6 +256,8 @@ public class OldHomePanelController {
                 ex.printStackTrace();
                 Platform.runLater(() -> {
                     startButton.setText("Start");
+                    statusLabel.setVisible(true);
+                    statusLabel.setText("" + ex.getMessage());
                 });
             }
         };

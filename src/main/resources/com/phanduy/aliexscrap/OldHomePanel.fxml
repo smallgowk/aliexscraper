@@ -72,6 +72,7 @@
                 <HBox spacing="10" alignment="CENTER_LEFT">
                     <Button fx:id="startButton" text="Start"
                             onAction="#onStart"/>
+                    <Label fx:id="statusLabel" text="" visible="false" style="-fx-text-fill: blue;"/>
                 </HBox>
 
                 <!-- TableView trạng thái crawl -->

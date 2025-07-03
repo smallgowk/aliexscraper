@@ -41,9 +41,6 @@ public class SnakeReadOrderInfoSvs extends ReadStoreOrderInfoSvs{
         String reasons = null;
         int pageTotal = 0;
         String region = "US";
-        String productId = null;
-        String storeId = null;
-        String query = null;
 
         for (int j = 0; j < cellMax; j++) {
             String fieldName = formatter.formatCellValue(fieldNameRow.getCell(j));
@@ -87,20 +84,7 @@ public class SnakeReadOrderInfoSvs extends ReadStoreOrderInfoSvs{
                         region = value;
                     }
                     break;
-                case "product_id":
-                    productId = formatter.formatCellValue(fieldRow.getCell(j));
-                    break;
-                case "store_id":
-                    storeId = formatter.formatCellValue(fieldRow.getCell(j));
-                    break;
-                case "query":
-                    query = formatter.formatCellValue(fieldRow.getCell(j));
-                    break;
             }
-        }
-        
-        if(StringUtils.isEmpty(link) && StringUtils.isEmpty(productId) && StringUtils.isEmpty(storeId) && StringUtils.isEmpty(query)) {
-            return null;
         }
 
         BaseStoreOrderInfo baseStoreOrderInfo = new BaseStoreOrderInfo();
@@ -121,9 +105,6 @@ public class SnakeReadOrderInfoSvs extends ReadStoreOrderInfoSvs{
         baseStoreOrderInfo.setDescription(descriptionForm);
         baseStoreOrderInfo.setPageTotal(pageTotal);
         baseStoreOrderInfo.setRegion(region);
-        baseStoreOrderInfo.setStoreId(storeId);
-        baseStoreOrderInfo.setProductId(productId);
-        baseStoreOrderInfo.setQuery(query);
         return baseStoreOrderInfo;
     }
 }

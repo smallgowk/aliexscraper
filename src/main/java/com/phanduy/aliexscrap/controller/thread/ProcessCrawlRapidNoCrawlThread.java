@@ -225,7 +225,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 crawlProcessListener.onPushState(
                         signature,
                         pageNumber,
-                        processStoreInfoSvs.getStatus(aliexStoreInfo.getStoreSign(), page, aliexStoreInfo.totalPage, j, size)
+                        processStoreInfoSvs.getPercentProcess(size, j) + "%"
                 );
             }
         }

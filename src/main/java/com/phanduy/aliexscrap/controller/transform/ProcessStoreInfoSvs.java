@@ -401,13 +401,13 @@ public class ProcessStoreInfoSvs {
         }
     }
     
-    public String getStatus(String storeSign, int pageIndex, int pageTotal, int index, int size) {
+//    public String getStatus(String storeSign, int pageIndex, int pageTotal, int index, int size) {
 //        return "Page (" + pageIndex + "/" + pageTotal + ") " + 
 //                getPercentProcess(size, index) + "%    " + 
 //                "Success (" + getSuccessCount(storeSign, pageIndex) + "/" + size + ")";
-        return "Page (" + pageIndex + "/" + pageTotal + ") " + 
-                getPercentProcess(size, index) + "%";
-    }
+//        return "Page (" + pageIndex + "/" + pageTotal + ") " +
+//                getPercentProcess(size, index) + "%";
+//    }
     
     public String getStatusPageOnly(String storeSign, int pageIndex, int index, int size) {
 //        return "Page (" + pageIndex + "/" + pageTotal + ") " + 

@@ -154,8 +154,12 @@ public class OldHomePanelController {
                                             statusLabel.setText("Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
                                             break;
                                         case CheckInfoResponse.VERSION_INVALID:
-                                            statusLabel.setVisible(true);
-                                            statusLabel.setText("Version app đã quá cũ! Vui lòng cập nhật version mới để sử dụng!");
+                                            prefs.putBoolean("Latest", checkInfoResponse.isLatest());
+                                            prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
+                                            showInvalidVersion(
+                                                    "Version app đã quá cũ! Vui lòng cập nhật version mới để sử dụng!",
+                                                    checkInfoResponse.getLatestVersion()
+                                            );
                                             break;
                                         default:
                                             showInvalidInfo("Server error!. Liên hệ 0972071089 để được xử lý!");

@@ -53,8 +53,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import javafx.scene.control.TableCell;
 import javafx.util.Callback;
 import javafx.scene.layout.Region;
+import javafx.concurrent.Task;
+import javafx.geometry.Insets;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.geometry.Pos;
 
 import static com.phanduy.aliexscrap.api.ApiClient.SOCKET_URL;
+
+import java.net.URL;
+import java.io.InputStream;
+import java.io.BufferedInputStream;
+import java.io.FileOutputStream;
 
 public class OldHomePanelController {
     @FXML private TextField amzProductTemplate1Field;
@@ -308,8 +319,45 @@ public class OldHomePanelController {
                 () -> {
                     boolean confirmed = AlertUtil.showConfirmDialog("", message);
                     if (confirmed) {
-                        openDownloadInBrowser(latestVersion);
-                        Platform.exit();
+                        // Auto-update logic: tải về và chạy file installer mới, có progress dialog
+                        String url = "https://iamhere.vn/AliexScrapInstaller-" + latestVersion + ".exe";
+                        String downloads = System.getProperty("user.home") + File.separator + "Downloads";
+                        File downloadsDir = new File(downloads);
+                        if (!downloadsDir.exists()) downloadsDir.mkdirs();
+                        String installer = downloads + File.separator + "AliexScrapInstaller-" + latestVersion + ".exe";
+
+                        DownloadTask task = new DownloadTask(url, installer);
+                        ProgressBar progressBar = new ProgressBar();
+                        progressBar.progressProperty().bind(task.progressProperty());
+                        Stage dialogStage = new Stage();
+                        dialogStage.initModality(Modality.APPLICATION_MODAL);
+                        dialogStage.setTitle("Đang tải bản cập nhật...");
+                        VBox vbox = new VBox(10, new Label("Đang tải bản cập nhật..."), progressBar);
+                        vbox.setPadding(new Insets(20));
+                        vbox.setAlignment(Pos.CENTER);
+                        dialogStage.setScene(new Scene(vbox, 350, 100));
+                        dialogStage.setResizable(false);
+
+                        task.setOnSucceeded(e -> {
+                            dialogStage.close();
+                            try {
+                                String absPath = new java.io.File(installer).getAbsolutePath();
+                                Runtime.getRuntime().exec("cmd /c start \"\" \"" + absPath + "\"");
+                                System.exit(0);
+                            } catch (Exception ex) {
+                                AlertUtil.showError("Lỗi", "Không thể chạy file cài đặt: " + ex.getMessage());
+                                Platform.exit();
+                            }
+                        });
+                        task.setOnFailed(e -> {
+                            dialogStage.close();
+                            Throwable ex = task.getException();
+                            if (ex != null) ex.printStackTrace();
+                            AlertUtil.showError("Lỗi", "Không thể tải file cập nhật!");
+                            Platform.exit();
+                        });
+                        new Thread(task).start();
+                        dialogStage.showAndWait();
                     } else {
                         Platform.exit();
                     }
@@ -317,17 +365,43 @@ public class OldHomePanelController {
         );
     }
 
-    private void openDownloadInBrowser(String latestVersion) {
-        try {
-            String downloadUrl = "http://iamhere.vn/AliexScrapInstaller-" + latestVersion + ".zip";
-
-            // Mở URL trong trình duyệt mặc định
-            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                Desktop.getDesktop().browse(new URI(downloadUrl));
+    // Task download có progress
+    private static class DownloadTask extends Task<Void> {
+        private final String fileURL;
+        private final String savePath;
+        public DownloadTask(String fileURL, String savePath) {
+            this.fileURL = fileURL;
+            this.savePath = savePath;
+        }
+        @Override
+        protected Void call() throws Exception {
+            try {
+                URL url = new URL(fileURL);
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(30000);
+                int responseCode = conn.getResponseCode();
+                if (responseCode != 200) throw new IOException("HTTP error: " + responseCode);
+                long fileSize = conn.getContentLengthLong();
+                try (InputStream in = new BufferedInputStream(conn.getInputStream());
+                     FileOutputStream fileOutputStream = new FileOutputStream(savePath)) {
+                    byte[] dataBuffer = new byte[8192];
+                    int bytesRead;
+                    long totalBytes = 0;
+                    while ((bytesRead = in.read(dataBuffer, 0, 8192)) != -1) {
+                        fileOutputStream.write(dataBuffer, 0, bytesRead);
+                        totalBytes += bytesRead;
+                        if (fileSize > 0) {
+                            updateProgress(totalBytes, fileSize);
+                        }
+                    }
+                }
+                return null;
+            } catch (Exception ex) {
+                ex.printStackTrace(); // Log chi tiết lỗi download
+                throw ex;
             }
-
-        } catch (Exception e) {
-            AlertUtil.showError("Lỗi", "Không thể mở trình duyệt: " + e.getMessage());
         }
     }
 

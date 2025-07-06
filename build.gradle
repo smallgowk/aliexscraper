@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'com.phanduy.aliexscrap'
-version '1.0.1'
+version '1.0.2'
 
 task createProperties(dependsOn: processResources) {
   doLast {
@@ -149,6 +149,7 @@ jlink {
   mergedModule {
     requires 'com.google.gson'
     requires 'java.logging'
+    requires 'jdk.crypto.ec'
   }
   launcher {
     name = 'app'

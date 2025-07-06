@@ -80,9 +80,9 @@
                 <!-- TableView trạng thái crawl -->
                 <TableView fx:id="crawlTable" prefHeight="200" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="signatureCol" text="Signature" prefWidth="250"/>
-                        <TableColumn fx:id="pageCol" text="Page Number" prefWidth="100"/>
-                        <TableColumn fx:id="progressCol" text="Progress" prefWidth="128"/>
+                        <TableColumn fx:id="signatureCol" text="Signature" prefWidth="290"/>
+                        <TableColumn fx:id="pageCol" text="Page" prefWidth="60"/>
+                        <TableColumn fx:id="progressCol" text="Status" prefWidth="128"/>
                     </columns>
                 </TableView>
 

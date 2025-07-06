@@ -5,7 +5,14 @@ import java.util.concurrent.Executors;
 
 public class CrawlExecutor {
 
-    private static ExecutorService executor = Executors.newFixedThreadPool(2);
+    private static ExecutorService executor = null;
+    public static int maxThread = 1;
+
+    public static void initExecutor(int threads) {
+        maxThread = threads;
+        executor = Executors.newFixedThreadPool(maxThread);
+        System.out.println("Inited executor with max thead " + maxThread);
+    }
 
     public static void executeAsync(Runnable task) {
         ensureExecutor();
@@ -34,7 +41,7 @@ public class CrawlExecutor {
 
     private static void ensureExecutor() {
         if (executor.isShutdown() || executor.isTerminated()) {
-            executor = Executors.newFixedThreadPool(2);
+            executor = Executors.newFixedThreadPool(maxThread);
         }
     }
 }

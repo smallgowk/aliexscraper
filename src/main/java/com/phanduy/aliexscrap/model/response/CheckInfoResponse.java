@@ -24,6 +24,7 @@ public class CheckInfoResponse {
     private String message;
     private boolean latest;
     private String latestVersion;
+    private int maxThread = 1;
 
     public int getResultCode() {
         return resultCode;
@@ -39,5 +40,9 @@ public class CheckInfoResponse {
 
     public String getLatestVersion() {
         return latestVersion;
+    }
+
+    public int getMaxThread() {
+        return maxThread;
     }
 }

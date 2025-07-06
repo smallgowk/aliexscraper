@@ -178,6 +178,7 @@ public class OldHomePanelController {
                                 } else {
                                     prefs.putBoolean("Latest", checkInfoResponse.isLatest());
                                     prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
+                                    CrawlExecutor.initExecutor(checkInfoResponse.getMaxThread());
                                     startButton.setDisable(false);
                                     statusLabel.setVisible(false);
                                 }

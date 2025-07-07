@@ -22,7 +22,6 @@ import com.phanduy.aliexscrap.model.response.*;
 import com.phanduy.aliexscrap.utils.ComputerIdentifier;
 import com.phanduy.aliexscrap.utils.DialogUtil;
 import com.phanduy.aliexscrap.utils.StringUtils;
-import com.phanduy.aliexscrap.utils.DataUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -107,7 +106,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             AliexStoreInfo aliexStoreInfo = TransformStoreInput.getInstance().transformRawData(baseStoreOrderInfo);
             aliexStoreInfo.setStoreSign(signature);
             String computerSerial = ComputerIdentifier.getDiskSerialNumber().replaceAll(" ", "-");
-            processStore(aliexStoreInfo, computerSerial);
+            processData(aliexStoreInfo, computerSerial);
         } catch (Exception ex) {
             try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
                 fw.write("[Thread] Exception: " + ex.toString() + "\n");
@@ -119,7 +118,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         }
     }
 
-    public void processStore(AliexStoreInfo aliexStoreInfo, String computerSerial) {
+    public void processData(AliexStoreInfo aliexStoreInfo, String computerSerial) {
         try {
             aliexStoreInfo.setStoreSign(signature);
 //            crawlProcessListener.onStartProcess(aliexStoreInfo.getStoreSign(), aliexStoreInfo.info);
@@ -235,7 +234,16 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         aliexPageInfo.setTotalProduct(size);
         aliexPageInfo.setStoreSign(aliexStoreInfo.getStoreSign());
 
-        processStoreInfoSvs.processPageInfoNew(aliexStoreInfo, aliexPageInfo, page, listResults, baseStoreOrderInfo.getCategory());
+//        processStoreInfoSvs.processPageInfoNew(aliexStoreInfo, aliexPageInfo, page, listResults, baseStoreOrderInfo.getCategory());
+
+        ExportFileExecutor.executeThread(new ExportFileNewFlowThread(
+                processStoreInfoSvs,
+                aliexPageInfo,
+                listResults,
+                page,
+                baseStoreOrderInfo.getCategory(),
+                aliexStoreInfo
+        ));
 
         crawlProcessListener.onPushState(
                 signature,
@@ -328,7 +336,8 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         aliexPageInfo.setTotalProduct(size);
         aliexPageInfo.setStoreSign(aliexStoreInfo.getStoreSign());
 
-        processStoreInfoSvs.processPageInfo(aliexPageInfo);
+//        processStoreInfoSvs.processPageInfo(aliexPageInfo);
+        ExportFileExecutor.executeThread(new ExportFileOldFlowThread(aliexPageInfo, processStoreInfoSvs));
 
         crawlProcessListener.onPushState(
                 signature,

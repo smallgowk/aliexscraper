@@ -3,15 +3,12 @@ package com.phanduy.aliexscrap.controller.thread;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class CrawlExecutor {
+public class ExportFileExecutor {
 
     private static ExecutorService executor = null;
-    public static int maxThread = 1;
 
     public static void initExecutor(int threads) {
-        maxThread = threads;
-        executor = Executors.newFixedThreadPool(maxThread);
-        System.out.println("Inited executor with max thead " + maxThread + " - " + threads);
+        executor = Executors.newFixedThreadPool(1);
     }
 
     public static void executeAsync(Runnable task) {
@@ -41,7 +38,7 @@ public class CrawlExecutor {
 
     private static void ensureExecutor() {
         if (executor == null || executor.isShutdown() || executor.isTerminated()) {
-            executor = Executors.newFixedThreadPool(maxThread);
+            executor = Executors.newFixedThreadPool(1);
         }
     }
 }

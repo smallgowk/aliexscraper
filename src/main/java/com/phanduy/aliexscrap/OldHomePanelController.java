@@ -5,6 +5,7 @@ import com.phanduy.aliexscrap.controller.DownloadManager;
 import com.phanduy.aliexscrap.controller.inputprocess.InputDataConfig;
 import com.phanduy.aliexscrap.controller.inputprocess.SnakeReadOrderInfoSvs;
 import com.phanduy.aliexscrap.controller.thread.CrawlExecutor;
+import com.phanduy.aliexscrap.controller.thread.ExportFileExecutor;
 import com.phanduy.aliexscrap.controller.thread.ProcessCrawlRapidNoCrawlThread;
 import com.phanduy.aliexscrap.interfaces.CrawlProcessListener;
 import com.phanduy.aliexscrap.interfaces.DownloadListener;
@@ -178,7 +179,8 @@ public class OldHomePanelController {
                                 } else {
                                     prefs.putBoolean("Latest", checkInfoResponse.isLatest());
                                     prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
-                                    CrawlExecutor.initExecutor(checkInfoResponse.getMaxThread());
+                                    CrawlExecutor.initExecutor(checkInfoResponse.getMaxThreads());
+                                    ExportFileExecutor.initExecutor(1);
                                     startButton.setDisable(false);
                                     statusLabel.setVisible(false);
                                 }

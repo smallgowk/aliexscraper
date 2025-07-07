@@ -10,8 +10,8 @@ import java.util.concurrent.TimeUnit;
 public class ApiClient {
 //    private static final String BASE_URL = "http://iamhere.vn:89/api/v3/pltool/";
 //    private static final String BASE_URL = "http://iamhere.vn:89/api/v1/pltool/";
-    private static final String BASE_URL = "http://iamhere.vn:8089/api/v1/";
-    private static final String GG_SHEET_URL = "http://iamhere.vn:8089/api/";
+    private static final String BASE_URL = "https://iamhere.vn/api/v1/";
+    private static final String GG_SHEET_URL = "https://iamhere.vn/api/";
     public static final String SOCKET_URL = "ws://iamhere.vn:8089/ws/websocket";
 //    private static final String BASE_URL = "http://localhost:8089/api/v1/";
     private static Retrofit retrofit;

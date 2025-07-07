@@ -82,7 +82,7 @@
                     <columns>
                         <TableColumn fx:id="signatureCol" text="Signature" prefWidth="290"/>
                         <TableColumn fx:id="pageCol" text="Page" prefWidth="60"/>
-                        <TableColumn fx:id="progressCol" text="Status" prefWidth="128"/>
+                        <TableColumn fx:id="progressCol" text="Status" prefWidth="115"/>
                     </columns>
                 </TableView>
 

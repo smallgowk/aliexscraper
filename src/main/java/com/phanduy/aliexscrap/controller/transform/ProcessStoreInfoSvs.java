@@ -49,6 +49,10 @@ public class ProcessStoreInfoSvs {
         mapBrandName.clear();
     }
 
+    public static void removeData(String key) {
+        mapProducts.remove(key);
+    }
+
     public void processStoreInfo(AliexStoreInfo aliexStoreInfo) {
         mapStoreInfo.put(genKey(ComputerIdentifier.diskSerial, aliexStoreInfo.getStoreSign()), aliexStoreInfo);
 
@@ -538,6 +542,8 @@ public class ProcessStoreInfoSvs {
         if (listErrors != null && !listErrors.isEmpty()) {
             ProcessPageDataSvs.processPageErrorData(listErrors, aliexStoreInfo2, aliexPageInfo.getPageIndex());
         }
+        mapProducts.remove(keyProduct);
+        mapErrorsProducts.remove(keyProduct);
     }
 
     public void processPageInfoNew(AliexStoreInfo aliexStoreInfo, AliexPageInfo aliexPageInfo, int page, ArrayList<TransformCrawlResponse> listResults, String cagetory) {

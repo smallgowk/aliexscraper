@@ -251,7 +251,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 processStoreInfoSvs.getStatusWithFixedPercent(aliexStoreInfo.getStoreSign(), page, aliexStoreInfo.totalPage, 100, size)
         );
         successCount += processStoreInfoSvs.getSuccessCount(aliexStoreInfo.getStoreSign(), page);
-        processStoreInfoSvs.clearMapData();
+//        processStoreInfoSvs.clearMapData();
     }
 
     public void processOldFlow(List<String> getPageGGProducts, AliexStoreInfo aliexStoreInfo) throws Exception {
@@ -345,6 +345,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 "Done"
         );
         successCount += processStoreInfoSvs.getSuccessCount(aliexStoreInfo.getStoreSign(), page);
-        processStoreInfoSvs.clearMapData();
+//        processStoreInfoSvs.clearMapData();
     }
 }

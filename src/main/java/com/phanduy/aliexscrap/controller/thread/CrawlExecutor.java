@@ -1,5 +1,7 @@
 package com.phanduy.aliexscrap.controller.thread;
 
+import com.phanduy.aliexscrap.controller.transform.ProcessStoreInfoSvs;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -24,6 +26,7 @@ public class CrawlExecutor {
     }
 
     public static void shutdownNow() {
+        ProcessStoreInfoSvs.clearMapData();
         executor.shutdownNow();
     }
 

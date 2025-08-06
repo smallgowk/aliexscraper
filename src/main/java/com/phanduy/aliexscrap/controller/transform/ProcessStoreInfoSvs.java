@@ -42,7 +42,7 @@ public class ProcessStoreInfoSvs {
     static HashMap<String, ArrayList<Pair<String, String>>> mapErrorsProducts = new HashMap<>();
     static HashMap<String, ArrayList<String>> mapBrandName = new HashMap<>();
     
-    public void clearMapData() {
+    public static void clearMapData() {
 //        mapStoreInfo.clear();
         mapProducts.clear();
         mapErrorsProducts.clear();

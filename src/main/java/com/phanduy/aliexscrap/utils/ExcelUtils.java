@@ -227,6 +227,7 @@ public class ExcelUtils {
             }
 
             for (TransformCrawlResponse response : listResponses) {
+                if (response.listProducts == null || response.listProducts.isEmpty()) continue;
                 for (NewProduct newProduct : response.listProducts) {
                     createRow(sheet, response, newProduct, category, rowNum++, hashMapField, cellMax);
                 }

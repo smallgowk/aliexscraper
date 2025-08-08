@@ -41,6 +41,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
     ApiService apiServiceNoLog;
     String signature;
     String pageNumber;
+    ArrayList<String> listProducts;
 
 //    StringBuffer sb;
     public ProcessCrawlRapidNoCrawlThread(
@@ -48,10 +49,12 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             HashMap<String, String> toolParams,
             String signature,
             String pageNumber,
-            CrawlProcessListener crawlProcessListener
+            CrawlProcessListener crawlProcessListener,
+            ArrayList<String> listProducts
     ) {
         this.signature = signature;
         this.pageNumber = pageNumber;
+        this.listProducts = listProducts;
         try {
             this.baseStoreOrderInfo = baseStoreOrderInfo;
             this.toolParams = toolParams;
@@ -106,7 +109,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             AliexStoreInfo aliexStoreInfo = TransformStoreInput.getInstance().transformRawData(baseStoreOrderInfo);
             aliexStoreInfo.setStoreSign(signature);
             String computerSerial = ComputerIdentifier.getDiskSerialNumber().replaceAll(" ", "-");
-            processData(aliexStoreInfo, computerSerial);
+            processData(aliexStoreInfo, computerSerial, listProducts);
         } catch (Exception ex) {
             try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
                 fw.write("[Thread] Exception: " + ex.toString() + "\n");
@@ -118,23 +121,23 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         }
     }
 
-    public void processData(AliexStoreInfo aliexStoreInfo, String computerSerial) {
+    public void processData(AliexStoreInfo aliexStoreInfo, String computerSerial, ArrayList<String> listProducts) {
         try {
             aliexStoreInfo.setStoreSign(signature);
 //            crawlProcessListener.onStartProcess(aliexStoreInfo.getStoreSign(), aliexStoreInfo.info);
             processStoreInfoSvs.processStoreInfo(aliexStoreInfo);
             crawlProcessListener.onPushState(signature, pageNumber, "...");
-            GetAliexProductsReq getAliexProductsReq = new GetAliexProductsReq(
-                    computerSerial,
-                    signature,
-                    pageNumber
-            );
-            List<String> getPageGGProducts = ApiCall.getInstance().getAliexProducts(getAliexProductsReq);
+//            GetAliexProductsReq getAliexProductsReq = new GetAliexProductsReq(
+//                    computerSerial,
+//                    signature,
+//                    pageNumber
+//            );
+//            List<String> getPageGGProducts = ApiCall.getInstance().getAliexProducts(getAliexProductsReq);
 
             if (StringUtils.isEmpty(Configs.template)) {
-                processOldFlow(getPageGGProducts, aliexStoreInfo);
+                processOldFlow(listProducts, aliexStoreInfo);
             } else {
-                processNewFormatFlow(getPageGGProducts, aliexStoreInfo);
+                processNewFormatFlow(listProducts, aliexStoreInfo);
             }
 
             crawlProcessListener.onPushState(signature, pageNumber, "Done");

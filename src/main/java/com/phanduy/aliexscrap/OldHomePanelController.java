@@ -1,5 +1,7 @@
 package com.phanduy.aliexscrap;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.phanduy.aliexscrap.config.Configs;
 import com.phanduy.aliexscrap.controller.DownloadManager;
 import com.phanduy.aliexscrap.controller.inputprocess.InputDataConfig;
@@ -40,6 +42,7 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.prefs.Preferences;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -60,6 +63,7 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.geometry.Pos;
+import org.jetbrains.annotations.Nullable;
 
 import static com.phanduy.aliexscrap.api.ApiClient.SOCKET_URL;
 
@@ -275,8 +279,10 @@ public class OldHomePanelController {
                             String diskSerialNumber = obj.has("diskSerialNumber") ? obj.get("diskSerialNumber").getAsString() : null;
                             String signature = obj.has("signature") ? obj.get("signature").getAsString() : null;
                             String pageNumber = obj.has("pageNumber") ? obj.get("pageNumber").getAsString() : null;
+                            ArrayList<String> listProducts = parseListProducts(obj);
+                            System.out.println("List: " + listProducts);
                             if (ComputerIdentifier.getDiskSerialNumber().equals(diskSerialNumber) && signature != null && pageNumber != null) {
-                                startCrawling(signature, pageNumber);
+                                startCrawling(signature, pageNumber, listProducts);
                             }
                         } catch (Exception e) {
                             System.out.println("Lỗi parse JSON từ message: " + e.getMessage());
@@ -305,6 +311,68 @@ public class OldHomePanelController {
             }
         };
     }
+
+    private @Nullable String extractLastJsonObject(String message) {
+        if (message == null) return null;
+        int start = message.lastIndexOf('{');
+        if (start < 0) return null;
+        // Cắt từ dấu '{' cuối cùng tới hết chuỗi
+        return message.substring(start).trim();
+    }
+
+    private @Nullable String optString(JsonObject o, String key) {
+        if (o == null || key == null || !o.has(key) || o.get(key).isJsonNull()) return null;
+        try { return o.get(key).getAsString(); } catch (Exception ignore) { return null; }
+    }
+
+    private ArrayList<String> parseListProducts(JsonObject obj) {
+        ArrayList<String> out = new ArrayList<>();
+        if (obj == null || !obj.has("listProducts") || obj.get("listProducts").isJsonNull()) return out;
+
+        JsonElement lp = obj.get("listProducts");
+        try {
+            if (lp.isJsonArray()) {
+                for (JsonElement el : lp.getAsJsonArray()) {
+                    if (!el.isJsonNull()) out.add(el.getAsString());
+                }
+                return out;
+            }
+            // Trường hợp server gửi dưới dạng String: "[...]" hoặc "a, b, c"
+            if (lp.isJsonPrimitive()) {
+                String s = lp.getAsString();
+                if (s != null) {
+                    s = s.trim();
+                    // Thử parse như JSON array string
+                    if (s.startsWith("[") && s.endsWith("]")) {
+                        try {
+                            JsonArray arr = JsonParser.parseString(s).getAsJsonArray();
+                            for (JsonElement el : arr) {
+                                if (!el.isJsonNull()) out.add(el.getAsString());
+                            }
+                            return out;
+                        } catch (Exception ignore) {
+                            // rơi xuống split tay
+                        }
+                        // fallback: strip [] rồi split
+                        s = s.substring(1, s.length() - 1);
+                    }
+                    // split theo dấu phẩy, trim từng phần tử
+                    for (String part : s.split(",")) {
+                        String v = part.trim();
+                        if (!v.isEmpty()) {
+                            // bỏ dấu ngoặc kép nếu có
+                            if ((v.startsWith("\"") && v.endsWith("\"")) || (v.startsWith("'") && v.endsWith("'"))) {
+                                v = v.substring(1, v.length() - 1);
+                            }
+                            out.add(v);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignore) { /* để out rỗng */ }
+        return out;
+    }
+
 
     private void showInvalidInfo(String message) {
         Platform.runLater(
@@ -592,7 +660,7 @@ public class OldHomePanelController {
         client.connect();
     }
 
-    private void startCrawling(String signature, String pageNumber) {
+    private void startCrawling(String signature, String pageNumber, ArrayList<String> listProducts) {
         downloadImageLabel.setText("");
         DownloadManager.getInstance().clearData();
 
@@ -646,7 +714,8 @@ public class OldHomePanelController {
                             inputDataConfig.params,
                             signature,
                             pageNumber,
-                            crawlProcessListener
+                            crawlProcessListener,
+                            listProducts
                     )
             );
         } catch (Exception ex) {

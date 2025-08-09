@@ -253,12 +253,37 @@ public class ProductAmz {
     public String number_of_items;
     public String groupType;
     public String department_name;
+
     public String shipping_method;
-    
+    public String promotion_price;
+    public String shipping_price;
+    public String shipping_from;
+    public String deal_type;
+
     public boolean hasChild = false;
 
     public String getDepartment_name() {
         return department_name;
+    }
+
+    public void setDeal_type(String deal_type) {
+        this.deal_type = deal_type;
+        DataStore.putProductData(item_sku, "deal_type", deal_type);
+    }
+
+    public void setShipping_from(String shipping_from) {
+        this.shipping_from = shipping_from;
+        DataStore.putProductData(item_sku, "shipping_from", shipping_from);
+    }
+
+    public void setPromotion_price(String promotion_price) {
+        this.promotion_price = promotion_price;
+        DataStore.putProductData(item_sku, "promotion_price", promotion_price);
+    }
+
+    public void setShipping_price(String shipping_price) {
+        this.shipping_price = shipping_price;
+        DataStore.putProductData(item_sku, "shipping_price", shipping_price);
     }
 
     public void setDepartment_name(String department_name) {

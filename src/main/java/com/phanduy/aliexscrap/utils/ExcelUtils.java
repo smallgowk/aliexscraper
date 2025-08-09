@@ -78,7 +78,34 @@ public class ExcelUtils {
             CellStyle dateCellStyle = workbook.createCellStyle();
             dateCellStyle.setDataFormat(createHelper.createDataFormat().getFormat("dd-MM-yyyy"));
 
-            Row fieldRow = sheet.getRow(2);
+            int fieldRowIndex = 0;
+            Row fieldRow = sheet.getRow(fieldRowIndex);
+            boolean isFound = false;
+            while (!isFound) {
+                int lastCol = fieldRow.getLastCellNum();
+                for (int i = 0; i <= lastCol; i++) {
+                    Cell cell = fieldRow.getCell(i);
+                    if (cell == null) {
+                        continue;
+                    }
+                    String value = cell.getStringCellValue();
+                    if (value == null) {
+                        continue;
+                    }
+                    if (value.toLowerCase().equals("feed_product_type")) {
+                        isFound = true;
+                        break;
+                    }
+                }
+                if (!isFound) {
+                    fieldRowIndex ++;
+                    fieldRow = sheet.getRow(fieldRowIndex);
+                    if (fieldRow == null) {
+                        return;
+                    }
+                }
+            }
+
             int cellMax = 0;
 
             if (fieldRow == null) {
@@ -93,9 +120,11 @@ public class ExcelUtils {
                 return;
             }
 
-            int rowNum = 3;
-            while (sheet.getRow(rowNum) != null) {
-                rowNum++;
+            int rowNum = fieldRowIndex + 1;
+            Row checkRow = sheet.getRow(rowNum );
+            while (checkRow != null) {
+                rowNum  ++;
+                checkRow = sheet.getRow(rowNum );
             }
 
             for (ProductAmz productAmz : listProducts) {
@@ -193,6 +222,9 @@ public class ExcelUtils {
                 if (!isFound) {
                     fieldRowIndex ++;
                     fieldRow = sheet.getRow(fieldRowIndex);
+                    if (fieldRow == null) {
+                        return;
+                    }
                 }
             }
             
@@ -1248,7 +1280,7 @@ public class ExcelUtils {
                     Cell cell = row.getCell(0); // Cột A (cell 0)
                     if (cell != null && cell.getCellType() == CellType.STRING) {
                         String value = cell.getStringCellValue();
-                        if (value != null && value.contains("TemplateType")) {
+                        if (value != null && (value.contains("TemplateType") || value.contains("feed_product_type"))) {
                             return true;
                         }
                     }

@@ -2,6 +2,7 @@ package com.phanduy.aliexscrap.controller.thread;
 
 import com.phanduy.aliexscrap.controller.transform.ProcessStoreInfoSvs;
 
+import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -9,6 +10,9 @@ public class CrawlExecutor {
 
     private static ExecutorService executor = null;
     public static int maxThread = 1;
+
+    public static HashSet<String> bannedSignature = new HashSet<>();
+    public static boolean isAuthen = true;
 
     public static void initExecutor(int threads) {
         maxThread = threads;
@@ -28,6 +32,26 @@ public class CrawlExecutor {
     public static void shutdownNow() {
         ProcessStoreInfoSvs.clearMapData();
         executor.shutdownNow();
+    }
+
+    public static void addSignatureToBanned(String signature) {
+        bannedSignature.add(signature);
+    }
+
+    public static boolean isBannedSignature(String signature) {
+        return bannedSignature.contains(signature);
+    }
+
+    public static String checkState(String signature) {
+        if (!isAuthen) {
+            return "Auth";
+        } else {
+            if (isBannedSignature(signature)) {
+                return "Post.";
+            } else {
+                return null;
+            }
+        }
     }
 
     public static void executeThread(Thread thread) {

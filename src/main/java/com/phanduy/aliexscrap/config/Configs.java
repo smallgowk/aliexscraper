@@ -16,6 +16,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
@@ -75,6 +76,7 @@ public class Configs {
 //    public static String STORE_PRODUCT_PATH;
 //    public static String BRANCH_PRODUCT_PATH;
 //    public static String FIXING_PRODUCT_PATH;
+    public static String CACHE_DIR;
     public static String CACHE_PATH;
     public static String ERROR_PRODUCT_PATH;
     public static String COOKIE_PATH;
@@ -113,7 +115,7 @@ public class Configs {
 //    public static int usingFeatureFromDes;
 //    public static int fetchingImageFromDes;
     public static int dataSaveType;
-    public static int downloadAllImage = 1;
+    public static int downloadAllImage = 0;
 //    public static int dataLevel;
     public static int port = 89;
     
@@ -200,56 +202,72 @@ public class Configs {
 //        AWSUtil.init();
 //
 //        BTGManager.getInstance().initBTG();
+        initCacheFolder();
+    }
 
+    public static void initCacheFolder() {
+        String dir = System.getProperty("user.home");
+        if (dir == null || dir.isEmpty()) {
+            dir = System.getProperty("user.dir");
+            if (dir == null || dir.isEmpty()) {
+                dir = Paths.get("").toAbsolutePath().toString();
+            }
+        }
+
+        System.out.println("User home path: " + dir);
+
+        CACHE_DIR  = dir + pathChar + ".aliexscrap";
+        ERROR_PRODUCT_PATH = String.valueOf(CACHE_DIR + pathChar + ERROR_PRODUCT_DIRECTORY + pathChar);
+        CACHE_PATH = String.valueOf(CACHE_DIR + pathChar + CACHE_DIRECTORY + pathChar);
+        LOG_PATH = CACHE_PATH;
+        COOKIE_PATH = String.valueOf(CACHE_PATH + COOKIE_CACHE_FILE);
+
+        File directory = new File(CACHE_DIR);
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+
+        File errorDirectory = new File(ERROR_PRODUCT_PATH);
+        if (!errorDirectory.exists()) {
+            errorDirectory.mkdirs();
+        }
+
+        File cacheDirectory = new File(CACHE_PATH);
+        if (!cacheDirectory.exists()) {
+            cacheDirectory.mkdirs();
+        }
+
+        cacheDirectory = new File(CACHE_PATH + STORE_INFO_CACHE_DIR);
+        if (!cacheDirectory.exists()) {
+            cacheDirectory.mkdirs();
+        }
+
+        cacheDirectory = new File(CACHE_PATH + PRODUCT_CACHE_DIR_V2);
+        if (!cacheDirectory.exists()) {
+            cacheDirectory.mkdirs();
+        }
     }
     
     public static void updateDataPath() {
-//        TOOL_DATA_PATH = path;
-        CACHE_PATH = String.valueOf(TOOL_DATA_PATH + pathChar + CACHE_DIRECTORY + pathChar);
-        ERROR_PRODUCT_PATH = String.valueOf(TOOL_DATA_PATH + pathChar + ERROR_PRODUCT_DIRECTORY + pathChar);
-        COOKIE_PATH = String.valueOf(CACHE_PATH + COOKIE_CACHE_FILE);
-        LOG_PATH = String.valueOf(TOOL_DATA_PATH + pathChar + CACHE_DIRECTORY + pathChar);
-        
-        
-        PRODUCT_DATA_PATH = String.valueOf(TOOL_DATA_PATH + pathChar + DEFAULT_PRODUCT_DIRECTORY + pathChar);
+        // Sử dụng thư mục người dùng thay vì thư mục làm việc hiện tại
+        PRODUCT_DATA_PATH = String.valueOf(TOOL_DATA_PATH + pathChar);
         IMAGE_DATA_PATH = String.valueOf(TOOL_DATA_PATH + pathChar + IMAGE_DIRECTORY + pathChar);
-        
+
         File directory = new File(TOOL_DATA_PATH);
         if (!directory.exists()) {
-            directory.mkdir();
+            directory.mkdirs();
         }
-        
-        directory = new File(PRODUCT_DATA_PATH);
+
+        if (downloadAllImage == 1) {
+            initImageDir();
+        }
+    }
+
+    public static void initImageDir() {
+        File directory = new File(IMAGE_DATA_PATH);
         if (!directory.exists()) {
             directory.mkdir();
         }
-        
-        directory = new File(IMAGE_DATA_PATH);
-        if (!directory.exists()) {
-            directory.mkdir();
-        }
-        
-        File errorDirectory = new File(ERROR_PRODUCT_PATH);
-        if (!errorDirectory.exists()) {
-            errorDirectory.mkdir();
-        }
-        
-        File cacheDirectory = new File(CACHE_PATH);
-        if (!cacheDirectory.exists()) {
-            cacheDirectory.mkdir();
-        }
-        
-        cacheDirectory = new File(CACHE_PATH + STORE_INFO_CACHE_DIR);
-        if (!cacheDirectory.exists()) {
-            cacheDirectory.mkdir();
-        }
-        
-        cacheDirectory = new File(CACHE_PATH + PRODUCT_CACHE_DIR_V2);
-        if (!cacheDirectory.exists()) {
-            cacheDirectory.mkdir();
-        }
-        
-        
     }
 
 //    public static void loadProductPathFolder() {
@@ -928,5 +946,22 @@ public class Configs {
         ai = data.ai;
         System.out.println("Download " + downloadAllImage);
         System.out.println("NewFile: " + Configs.excelSampleFilePath);
+        if (downloadAllImage == 1) {
+            initImageDir();
+        }
+    }
+
+    public static String getConfigInfo(HashMap<String, String> configs, String computerSerial) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("DSN: ").append(computerSerial).append(";");
+
+        for (String key : configs.keySet()) {
+            if (key.equalsIgnoreCase("template")) {
+                sb.append("template: ").append(StringUtils.isEmpty(Configs.template) ? "Old" : "New").append(";");
+            } else {
+                sb.append(key).append(": ").append(configs.get(key)).append(";");
+            }
+        }
+        return sb.toString();
     }
 }

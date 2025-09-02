@@ -6,7 +6,9 @@ import com.phanduy.aliexscrap.model.response.GetPageRapidData;
 import com.phanduy.aliexscrap.model.response.TransformCrawlResponse;
 import com.phanduy.aliexscrap.model.request.*;
 import com.phanduy.aliexscrap.model.request.GetStoreInfoRapidDataReq;
+import com.phanduy.aliexscrap.model.request.UpdateCrawlSignatureReq;
 import com.phanduy.aliexscrap.model.response.*;
+import com.phanduy.aliexscrap.model.response.UpdateCrawlSignatureResponse;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.POST;
@@ -52,4 +54,7 @@ public interface ApiService {
 
     @POST("ggsheet/getAliexProducts")
     Call<ApiResponse<List<String>>> getAliexProducts(@Body GetAliexProductsReq request);
+
+    @POST("ggsheet/updateCrawlSignature")
+    Call<ApiResponse<UpdateCrawlSignatureResponse>> updateCrawlSignature(@Body UpdateCrawlSignatureReq request);
 }

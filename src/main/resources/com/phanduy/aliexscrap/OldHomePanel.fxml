@@ -10,6 +10,7 @@
             <Menu text="Menus">
                 <items>
                     <MenuItem text="About" onAction="#showAboutPanel"/>
+                    <MenuItem text="Clear Cache" onAction="#onClearCacheButton"/>
                 </items>
             </Menu>
         </menus>

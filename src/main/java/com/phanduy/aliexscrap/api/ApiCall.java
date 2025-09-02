@@ -2,6 +2,8 @@ package com.phanduy.aliexscrap.api;
 
 import com.phanduy.aliexscrap.model.response.*;
 import com.phanduy.aliexscrap.model.request.*;
+import com.phanduy.aliexscrap.model.request.UpdateCrawlSignatureReq;
+import com.phanduy.aliexscrap.model.response.UpdateCrawlSignatureResponse;
 import retrofit2.Call;
 import retrofit2.Response;
 
@@ -152,6 +154,26 @@ public class ApiCall {
     public List<String> getAliexProducts(GetAliexProductsReq req) throws Exception {
         Call<ApiResponse<List<String>>> call = apiGGService.getAliexProducts(req);
         Response<ApiResponse<List<String>>> response = null;
+        try {
+            response = call.execute();
+        } catch (IOException e) {
+            return null;
+        }
+
+        if (response.isSuccessful() && response.body() != null) {
+            return response.body().getData();
+        } else {
+            if (response.body() != null && response.body().error != null) {
+                throw new Exception(response.body().error);
+            } else {
+                return null;
+            }
+        }
+    }
+
+    public UpdateCrawlSignatureResponse updateCrawlSignature(UpdateCrawlSignatureReq req) throws Exception {
+        Call<ApiResponse<UpdateCrawlSignatureResponse>> call = apiGGService.updateCrawlSignature(req);
+        Response<ApiResponse<UpdateCrawlSignatureResponse>> response = null;
         try {
             response = call.execute();
         } catch (IOException e) {

@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'com.phanduy.aliexscrap'
-version '1.0.7'
+version '1.0.9'
 
 task createProperties(dependsOn: processResources) {
   doLast {

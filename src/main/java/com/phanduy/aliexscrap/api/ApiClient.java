@@ -8,12 +8,18 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import java.util.concurrent.TimeUnit;
 
 public class ApiClient {
-//    private static final String BASE_URL = "http://iamhere.vn:89/api/v3/pltool/";
-//    private static final String BASE_URL = "http://iamhere.vn:89/api/v1/pltool/";
-    private static final String BASE_URL = "https://iamhere.vn/api/v1/";
-    private static final String GG_SHEET_URL = "https://iamhere.vn/api/";
-    public static final String SOCKET_URL = "ws://iamhere.vn:8089/ws/websocket";
-//    private static final String BASE_URL = "http://localhost:8089/api/v1/";
+  private static final String DOMAIN = "iamhere.vn";
+  private static final String DOMAIN_WS = "iamhere.vn:8089";
+  private static final String SCHEME = "https://";
+
+//    private static final String DOMAIN = "localhost:8089";
+//    private static final String DOMAIN_WS = "localhost:8089";
+//    private static final String SCHEME = "http://";
+
+    private static final String BASE_URL = SCHEME + DOMAIN +  "/api/v1/";
+
+    private static final String GG_SHEET_URL = SCHEME + DOMAIN + "/api/";
+    public static final String SOCKET_URL = "ws://" + DOMAIN_WS + "/ws/websocket";
     private static Retrofit retrofit;
     private static Retrofit retrofitGG;
     private static Retrofit retrofitNoLog;

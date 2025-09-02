@@ -13,6 +13,7 @@ import com.phanduy.aliexscrap.interfaces.CrawlProcessListener;
 import com.phanduy.aliexscrap.interfaces.DownloadListener;
 import com.phanduy.aliexscrap.model.aliex.store.inputdata.BaseStoreOrderInfo;
 import com.phanduy.aliexscrap.model.request.CheckInfoReq;
+import com.phanduy.aliexscrap.model.request.UpdateCrawlSignatureReq;
 import com.phanduy.aliexscrap.model.response.CheckInfoResponse;
 import com.phanduy.aliexscrap.model.response.ResponseObj;
 import com.phanduy.aliexscrap.api.ApiCall;
@@ -42,7 +43,13 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.DosFileAttributeView;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.prefs.Preferences;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -71,6 +78,7 @@ import java.net.URL;
 import java.io.InputStream;
 import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
+import java.util.stream.Stream;
 
 public class OldHomePanelController {
     @FXML private TextField amzProductTemplate1Field;
@@ -266,6 +274,12 @@ public class OldHomePanelController {
                     // Sau khi nhận CONNECTED, gửi SUBSCRIBE tới /topic/messages
                     String subscribeFrame = "SUBSCRIBE\nid:sub-0\ndestination:/topic/messages\n\n\u0000";
                     this.send(subscribeFrame);
+
+                    // Subscribe để nhận response đăng ký
+                    String subscribeRegistrationFrame = "SUBSCRIBE\nid:sub-registration\ndestination:/queue/registration\n\n\u0000";
+                    this.send(subscribeRegistrationFrame);
+
+                    // Gửi đăng ký machine với machineId và linkSheetId
                     isConnected = true;
                 } else if (message.startsWith("MESSAGE")) {
                     // Xử lý message thực tế từ topic
@@ -278,11 +292,20 @@ public class OldHomePanelController {
                             JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
                             String diskSerialNumber = obj.has("diskSerialNumber") ? obj.get("diskSerialNumber").getAsString() : null;
                             String signature = obj.has("signature") ? obj.get("signature").getAsString() : null;
+                            String linkSheetId = obj.has("linkSheetId") ? obj.get("linkSheetId").getAsString() : null;
+                            String linkSheetName = obj.has("linkSheetName") ? obj.get("linkSheetName").getAsString() : null;
                             String pageNumber = obj.has("pageNumber") ? obj.get("pageNumber").getAsString() : null;
                             ArrayList<String> listProducts = parseListProducts(obj);
                             System.out.println("List: " + listProducts);
+
+                            String machineId = ComputerIdentifier.getDiskSerialNumber(); // Thay bằng ID thực tế của máy
+
+                            String registerFrame = "SEND\ndestination:/app/register\ncontent-type:application/json\n\n" +
+                                    "{\"machineId\":\"" + machineId + "\",\"linkSheetId\":\"" + linkSheetId + "\"}\u0000";
+                            this.send(registerFrame);
+
                             if (ComputerIdentifier.getDiskSerialNumber().equals(diskSerialNumber) && signature != null && pageNumber != null) {
-                                startCrawling(signature, pageNumber, listProducts);
+                                startCrawling(signature, linkSheetId, linkSheetName, pageNumber, listProducts);
                             }
                         } catch (Exception e) {
                             System.out.println("Lỗi parse JSON từ message: " + e.getMessage());
@@ -490,6 +513,47 @@ public class OldHomePanelController {
     }
 
     @FXML
+    private void onClearCacheButton() {
+        clearDirectoryKeepRoot(Configs.CACHE_PATH);
+        AlertUtil.showAlert("Xóa cache", "Cache đã xóa!");
+    }
+
+    public boolean clearDirectoryKeepRoot(String dirPath) {
+        Path root = Paths.get(dirPath);
+        if (Files.notExists(root)) return true; // không có gì để xóa
+
+        try (Stream<Path> walk = Files.walk(root)) {
+            walk.filter(p -> !p.equals(root))                 // bỏ qua thư mục gốc
+                    .sorted(Comparator.reverseOrder())           // xóa file trước, rồi đến folder
+                    .forEach(p -> {
+                        try {
+                            tryDelete(p);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private static void tryDelete(Path p) throws IOException {
+        try {
+            Files.delete(p);
+        } catch (IOException first) {
+            // Trên Windows, file/folder read-only sẽ không xóa được -> bỏ cờ readonly rồi xóa lại
+            DosFileAttributeView view = Files.getFileAttributeView(p, DosFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+            if (view != null) {
+                try { view.setReadOnly(false); } catch (IOException ignore) {}
+            }
+            Files.delete(p);
+        }
+    }
+
+
+    @FXML
     private void onOpenOutputFolder() {
         FileOpener.openFileOrFolder(outputField.getText());
     }
@@ -608,6 +672,13 @@ public class OldHomePanelController {
         System.out.println("Settings Loaded!");
     }
 
+    private void closeSocket() {
+        if (client != null && client.isOpen()) {
+            client.close();
+            client = null;
+        }
+    }
+
     @FXML
     private void onStart() throws URISyntaxException {
         if (client != null && client.isOpen()) {
@@ -660,7 +731,7 @@ public class OldHomePanelController {
         client.connect();
     }
 
-    private void startCrawling(String signature, String pageNumber, ArrayList<String> listProducts) {
+    private void startCrawling(String signature, String linkSheetId, String linkSheetName, String pageNumber, ArrayList<String> listProducts) {
         downloadImageLabel.setText("");
         DownloadManager.getInstance().clearData();
 
@@ -713,6 +784,8 @@ public class OldHomePanelController {
                             storeOrderInfo,
                             inputDataConfig.params,
                             signature,
+                            linkSheetId,
+                            linkSheetName,
                             pageNumber,
                             crawlProcessListener,
                             listProducts
@@ -741,6 +814,21 @@ public class OldHomePanelController {
                     taskStatus.setPageNumber(Integer.parseInt(pageNumber));
                 });
             }
+        }
+
+        @Override
+        public void onStop(String result) {
+            if (client != null && client.isOpen()) {
+                client.close();
+                client = null;
+                CrawlExecutor.shutdownNow();
+            }
+
+            Platform.runLater(() -> {
+                startButton.setText("Start");
+                showInvalidInfo(result);
+            });
+
         }
     };
 

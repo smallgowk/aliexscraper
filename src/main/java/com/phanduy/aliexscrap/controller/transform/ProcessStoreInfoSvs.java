@@ -576,16 +576,17 @@ public class ProcessStoreInfoSvs {
             pageIndex = 1;
         }
 
-        File file = new File(Configs.PRODUCT_DATA_PATH + aliexStoreInfo.accNo);
+//        File file = new File(Configs.PRODUCT_DATA_PATH + aliexStoreInfo.accNo);
+        File file = new File(Configs.PRODUCT_DATA_PATH);
 
         if (!file.exists()) {
             file.mkdir();
         }
 
-        file = new File(file.getPath() + Configs.pathChar + "Aliex");
-        if (!file.exists()) {
-            file.mkdir();
-        }
+//        file = new File(file.getPath() + Configs.pathChar + "Aliex");
+//        if (!file.exists()) {
+//            file.mkdir();
+//        }
 
         file = new File(file.getPath() + Configs.pathChar + aliexStoreInfo.storeSign);
 
@@ -593,7 +594,7 @@ public class ProcessStoreInfoSvs {
             file.mkdir();
         }
 
-        return file.getPath() + Configs.pathChar + aliexStoreInfo.accNo + "_" + aliexStoreInfo.storeSign + "_page" + pageIndex + "_" + indexPart + ".xlsx";
+        return file.getPath() + Configs.pathChar + aliexStoreInfo.storeSign + "_page" + pageIndex + "_" + indexPart + ".xlsx";
 
     }
     
@@ -602,16 +603,17 @@ public class ProcessStoreInfoSvs {
             pageIndex = 1;
         }
 
-        File file = new File(Configs.PRODUCT_DATA_PATH + aliexStoreInfo.accNo);
+//        File file = new File(Configs.PRODUCT_DATA_PATH + aliexStoreInfo.accNo);
+        File file = new File(Configs.PRODUCT_DATA_PATH );
 
         if (!file.exists()) {
             file.mkdir();
         }
 
-        file = new File(file.getPath() + Configs.pathChar + "Aliex");
-        if (!file.exists()) {
-            file.mkdir();
-        }
+//        file = new File(file.getPath() + Configs.pathChar + "Aliex");
+//        if (!file.exists()) {
+//            file.mkdir();
+//        }
 
         file = new File(file.getPath() + Configs.pathChar + aliexStoreInfo.storeSign);
 
@@ -619,7 +621,7 @@ public class ProcessStoreInfoSvs {
             file.mkdir();
         }
 
-        return file.getPath() + Configs.pathChar + aliexStoreInfo.accNo + "_" + aliexStoreInfo.storeSign + "_page" + pageIndex + ".xlsx";
+        return file.getPath() + Configs.pathChar + aliexStoreInfo.storeSign + "_page" + pageIndex + ".xlsx";
 
     }
     

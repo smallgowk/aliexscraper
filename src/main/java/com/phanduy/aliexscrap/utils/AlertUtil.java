@@ -8,6 +8,17 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class AlertUtil {
+
+    public static boolean showAlert(String title, String message) {
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
     public static boolean showError(String title, String message) {
         Alert alert = new Alert(AlertType.ERROR);
         alert.setTitle(title);

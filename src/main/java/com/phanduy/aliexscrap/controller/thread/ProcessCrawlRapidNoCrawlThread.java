@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static com.phanduy.aliexscrap.model.response.CheckInfoResponse.PRODUCT_LIMIT_IN_DAY;
+
 /**
  *
  * @author duyuno
@@ -40,6 +42,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
     ApiService apiService;
     ApiService apiServiceNoLog;
     String signature;
+    String linkSheetId;
     String pageNumber;
     ArrayList<String> listProducts;
 
@@ -48,11 +51,14 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             BaseStoreOrderInfo baseStoreOrderInfo,
             HashMap<String, String> toolParams,
             String signature,
+            String linkSheetId,
+            String linkSheetName,
             String pageNumber,
             CrawlProcessListener crawlProcessListener,
             ArrayList<String> listProducts
     ) {
         this.signature = signature;
+        this.linkSheetId = linkSheetId;
         this.pageNumber = pageNumber;
         this.listProducts = listProducts;
         try {
@@ -90,6 +96,11 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 
     @Override
     public void run() {
+        String checkSignature = CrawlExecutor.checkState(signature);
+        if (!StringUtils.isEmpty(checkSignature)) {
+            crawlProcessListener.onPushState(signature, pageNumber, checkSignature);
+            return;
+        }
         try {
             successCount = 0;
             totalCount = 0;
@@ -100,7 +111,8 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 
             if (configInfo == null) {
                 isStop = true;
-                DialogUtil.showInfoMessage(null, "Lỗi hệ thống! Vui lòng kiểm tra kết nối mạng hoặc báo người quản trị!");
+//                DialogUtil.showInfoMessage(null, "Lỗi hệ thống! Vui lòng kiểm tra kết nối mạng hoặc báo người quản trị!");
+                crawlProcessListener.onPushState(signature, pageNumber, "Error");
                 return;
             }
 
@@ -109,6 +121,23 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             AliexStoreInfo aliexStoreInfo = TransformStoreInput.getInstance().transformRawData(baseStoreOrderInfo);
             aliexStoreInfo.setStoreSign(signature);
             String computerSerial = ComputerIdentifier.getDiskSerialNumber().replaceAll(" ", "-");
+
+            UpdateCrawlSignatureReq updateCrawlSignatureReq = new UpdateCrawlSignatureReq(
+                    linkSheetId,
+                    signature
+            );
+            updateCrawlSignatureReq.notes = Configs.getConfigInfo(
+                    toolParams,
+                    computerSerial
+            );
+            updateCrawlSignatureReq.status = "Getting";
+
+            try {
+                ApiCall.getInstance().updateCrawlSignature(updateCrawlSignatureReq);
+            } catch (Exception ex) {
+                System.out.println("" + ex.getMessage());
+            }
+
             processData(aliexStoreInfo, computerSerial, listProducts);
         } catch (Exception ex) {
             try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
@@ -139,6 +168,18 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             } else {
                 processNewFormatFlow(listProducts, aliexStoreInfo);
             }
+//            UpdateCrawlSignatureReq updateCrawlSignatureReq = new UpdateCrawlSignatureReq(
+//                    linkSheetId,
+//                    linkSheetName,
+//                    signature
+//            );
+//            updateCrawlSignatureReq.completedPages = pageNumber;
+//
+//            try {
+//                ApiCall.getInstance().updateCrawlSignature(updateCrawlSignatureReq);
+//            } catch (Exception ex) {
+//                System.out.println("" + ex.getMessage());
+//            }
 
             crawlProcessListener.onPushState(signature, pageNumber, "Done");
 //            crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
@@ -182,6 +223,8 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         
         String keyCache = aliexStoreInfo.getKeyCache(toolParams);
 
+        HashMap<String, RapidStoreSeller> hashMapStore = new HashMap<>();
+
         for (int j = 0; j < size; j++) {
             if (isStop) {
                 return;
@@ -201,16 +244,53 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 );
                 try {
                     TransformCrawlResponse data = ApiCall.getInstance().getNewTemplateProduct(transformRapidDataReq);
-                    isHasShip = true;
-                    CacheSvs.getInstance().saveProductInfo(data, keyCache);
-                    data.updateImageDownloads();
-                    listResults.add(data);
-                    successCount++;
+                    if (data.isSuccess()) {
+                        isHasShip = true;
+                        CacheSvs.getInstance().saveProductInfo(data, keyCache);
+                        data.updateImageDownloads();
+                        listResults.add(data);
+                        if (data.storeInfo != null && !StringUtils.isEmpty(data.storeInfo.sellerId)) {
+                            if (!hashMapStore.containsKey(data.storeInfo.sellerId)) {
+                                hashMapStore.put(data.storeInfo.sellerId, data.storeInfo);
+                            }
+                        }
+                        successCount++;
+                    } else {
+                        if (data.getResultCode() == PRODUCT_LIMIT_IN_DAY) {
+                            isStop = true;
+                            UpdateCrawlSignatureReq updateCrawlSignatureReq = new UpdateCrawlSignatureReq(
+                                    linkSheetId,
+                                    signature
+                            );
+                            updateCrawlSignatureReq.error = data.getMessage();
+
+                            try {
+                                ApiCall.getInstance().updateCrawlSignature(updateCrawlSignatureReq);
+                            } catch (Exception ex) {
+                                System.out.println("" + ex.getMessage());
+                            }
+                            crawlProcessListener.onStop(data.getMessage());
+                            return;
+                        } else {
+                            CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
+                            processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, data.getMessage());
+                        }
+                    }
                 } catch (Exception e) {
                     CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
                     if (Configs.isStopByNoShipping && page == 1 && j == 9 && !isHasShip) {
-                        DialogUtil.showInfoMessage(null, "Store có nhiều sản phẩm không có ship. Tool sẽ dừng crawl store này để tiết kiệm request!");
-//                        crawlProcessListener.onExit();
+                        UpdateCrawlSignatureReq updateCrawlSignatureReq = new UpdateCrawlSignatureReq(
+                                linkSheetId,
+                                signature
+                        );
+                        updateCrawlSignatureReq.error = "Store có nhiều sản phẩm không có ship. Tool sẽ dừng crawl store này để tiết kiệm request!";
+                        try {
+                            ApiCall.getInstance().updateCrawlSignature(updateCrawlSignatureReq);
+                        } catch (Exception ex) {
+                            System.out.println("" + ex.getMessage());
+                        }
+                        CrawlExecutor.addSignatureToBanned(signature);
+                        crawlProcessListener.onPushState(signature, pageNumber, "Post.");
                         return;
                     }
                     processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, e.getMessage());
@@ -221,6 +301,12 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                     isHasShip = true;
                     res.updateImageDownloads();
                     listResults.add(res);
+
+                    if (res.storeInfo != null && !StringUtils.isEmpty(res.storeInfo.sellerId)) {
+                        if (!hashMapStore.containsKey(res.storeInfo.sellerId)) {
+                            hashMapStore.put(res.storeInfo.sellerId, res.storeInfo);
+                        }
+                    }
                 }
             }
             if (!isStop) {
@@ -247,6 +333,36 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 baseStoreOrderInfo.getCategory(),
                 aliexStoreInfo
         ));
+
+        UpdateCrawlSignatureReq updateCrawlSignatureReq = new UpdateCrawlSignatureReq(
+                linkSheetId,
+                signature
+        );
+        updateCrawlSignatureReq.completedPages = pageNumber;
+
+        if (!hashMapStore.isEmpty()) {
+            updateCrawlSignatureReq.listStores = new ArrayList<>();
+            String keyword = StringUtils.extractKeyword(signature);
+            for (RapidStoreSeller store : hashMapStore.values()) {
+                updateCrawlSignatureReq.listStores.add(
+                        new StoreInfoDataReq(
+                                "https:" + store.storeUrl,
+                                store.storeTitle,
+                                keyword,
+                                "" + store.storeAge,
+                                "" + store.storeRating.sellerScore,
+                                "" + store.storeFollowers,
+                                "" + store.storeRating.sellerTotalNum
+                        )
+                );
+            }
+        }
+
+        try {
+            ApiCall.getInstance().updateCrawlSignature(updateCrawlSignatureReq);
+        } catch (Exception ex) {
+            System.out.println("" + ex.getMessage());
+        }
 
         crawlProcessListener.onPushState(
                 signature,
@@ -275,6 +391,8 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 
         String keyCache = aliexStoreInfo.getKeyCache(toolParams);
 
+        HashMap<String, RapidStoreSeller> hashMapStore = new HashMap<>();
+
         for (int j = 0; j < size; j++) {
             if (isStop) {
                 return;
@@ -295,20 +413,61 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 
                 try {
                     TransformCrawlResponse data = ApiCall.getInstance().getOldTemplateProduct(transformRapidDataReq);
-                    isHasShip = true;
-                    CacheSvs.getInstance().saveProductInfo(data, keyCache);
-                    processStoreInfoSvs.processRapidProduct(
-                            productId,
-                            data,
-                            aliexStoreInfo,
-                            page,
-                            aliexStoreInfo.getStoreSign()
-                    );
+                    if (data.isSuccess()) {
+                        isHasShip = true;
+                        CacheSvs.getInstance().saveProductInfo(data, keyCache);
+                        processStoreInfoSvs.processRapidProduct(
+                                productId,
+                                data,
+                                aliexStoreInfo,
+                                page,
+                                aliexStoreInfo.getStoreSign()
+                        );
+                        if (data.storeInfo != null && !StringUtils.isEmpty(data.storeInfo.sellerId)) {
+                            if (!hashMapStore.containsKey(data.storeInfo.sellerId)) {
+                                hashMapStore.put(data.storeInfo.sellerId, data.storeInfo);
+                            }
+                        }
+                    } else {
+                        if (data.getResultCode() == PRODUCT_LIMIT_IN_DAY) {
+                            isStop = true;
+                            crawlProcessListener.onStop(data.getMessage());
+                            UpdateCrawlSignatureReq updateCrawlSignatureReq = new UpdateCrawlSignatureReq(
+                                    linkSheetId,
+                                    signature
+                            );
+                            updateCrawlSignatureReq.error = data.getMessage();
+                            try {
+                                ApiCall.getInstance().updateCrawlSignature(updateCrawlSignatureReq);
+                            } catch (Exception ex) {
+                                System.out.println("" + ex.getMessage());
+                            }
+                            return;
+                        } else {
+                            CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
+                            processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, data.getMessage());
+                        }
+                    }
+
                 } catch (Exception e) {
                     CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
                     if (Configs.isStopByNoShipping && page == 1 && j == 9 && !isHasShip) {
-                        DialogUtil.showInfoMessage(null, "Store có nhiều sản phẩm không có ship. Tool sẽ dừng crawl store này để tiết kiệm request!");
-//                        crawlProcessListener.onExit();
+                        UpdateCrawlSignatureReq updateCrawlSignatureReq = new UpdateCrawlSignatureReq(
+                                linkSheetId,
+                                signature
+                        );
+                        updateCrawlSignatureReq.error = "Store có nhiều sản phẩm không có ship. Tool sẽ dừng crawl store này để tiết kiệm request!";
+                        try {
+                            ApiCall.getInstance().updateCrawlSignature(updateCrawlSignatureReq);
+                        } catch (Exception ex) {
+                            System.out.println("" + ex.getMessage());
+                        }
+                        CrawlExecutor.addSignatureToBanned(signature);
+                        crawlProcessListener.onPushState(
+                                signature,
+                                pageNumber,
+                                "Post."
+                        );
                         return;
                     }
                     processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, e.getMessage());
@@ -322,6 +481,12 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                             page,
                             aliexStoreInfo.getStoreSign()
                     );
+
+                    if (res.storeInfo != null && !StringUtils.isEmpty(res.storeInfo.sellerId)) {
+                        if (!hashMapStore.containsKey(res.storeInfo.sellerId)) {
+                            hashMapStore.put(res.storeInfo.sellerId, res.storeInfo);
+                        }
+                    }
                 }
             }
 
@@ -347,6 +512,37 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 pageNumber,
                 "Done"
         );
+
+        UpdateCrawlSignatureReq updateCrawlSignatureReq = new UpdateCrawlSignatureReq(
+                linkSheetId,
+                signature
+        );
+        updateCrawlSignatureReq.completedPages = pageNumber;
+
+        if (!hashMapStore.isEmpty()) {
+            updateCrawlSignatureReq.listStores = new ArrayList<>();
+            String keyword = StringUtils.extractKeyword(signature);
+            for (RapidStoreSeller store : hashMapStore.values()) {
+                updateCrawlSignatureReq.listStores.add(
+                        new StoreInfoDataReq(
+                                "https:" + store.storeUrl,
+                                store.storeTitle,
+                                keyword,
+                                "" + store.storeAge,
+                                "" + store.storeRating.sellerScore,
+                                "" + store.storeFollowers,
+                                "" + store.storeRating.sellerTotalNum
+                        )
+                );
+            }
+        }
+
+        try {
+            ApiCall.getInstance().updateCrawlSignature(updateCrawlSignatureReq);
+        } catch (Exception ex) {
+            System.out.println("" + ex.getMessage());
+        }
+
         successCount += processStoreInfoSvs.getSuccessCount(aliexStoreInfo.getStoreSign(), page);
 //        processStoreInfoSvs.clearMapData();
     }

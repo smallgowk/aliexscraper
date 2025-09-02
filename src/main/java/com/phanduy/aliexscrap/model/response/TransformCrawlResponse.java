@@ -7,7 +7,7 @@ import com.phanduy.aliexscrap.model.amazon.ProductAmz;
 import com.phanduy.aliexscrap.utils.StringUtils;
 import java.util.ArrayList;
 
-public class TransformCrawlResponse {
+public class TransformCrawlResponse extends CheckInfoResponse{
     public String productId;
     public ProductAmz baseAmzProduct;
     public float origiPrice;
@@ -38,6 +38,8 @@ public class TransformCrawlResponse {
     public String image_8;
     public String image_9;
     public ArrayList<NewProduct> listProducts;
+
+    public RapidStoreSeller storeInfo;
 
     public TransformCrawlResponse() {
     }

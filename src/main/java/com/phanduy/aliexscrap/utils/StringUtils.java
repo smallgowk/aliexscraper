@@ -300,4 +300,32 @@ public class StringUtils {
         Pattern pattern = Pattern.compile("[0-9]+");
         return pattern.matcher(input).matches();
     }
+
+    public static String extractKeyword(String input) {
+        if (StringUtils.isEmpty(input)) return null;
+        input = input.trim();
+
+        String[] parts = input.split(Pattern.quote("_"));
+        if (parts.length <= 2) return null;
+
+        if (isAllDigits(parts[0])) return null;
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0, length = parts.length; i < length - 2; i++) {
+            if (sb.length() == 0) {
+                sb.append(parts[i]);
+            } else {
+                sb.append(" ").append(parts[i]);
+            }
+        }
+        return sb.toString();
+    }
+
+    private static boolean isAllDigits(String s) {
+        if (s.isEmpty()) return false;
+        for (int i = 0; i < s.length(); i++) {
+            if (!Character.isDigit(s.charAt(i))) return false;
+        }
+        return true;
+    }
 }

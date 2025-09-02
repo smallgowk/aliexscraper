@@ -81,6 +81,9 @@ import java.io.FileOutputStream;
 import java.util.stream.Stream;
 
 public class OldHomePanelController {
+    // Static reference để lưu trữ instance hiện tại
+    private static OldHomePanelController instance;
+    
     @FXML private TextField amzProductTemplate1Field;
     @FXML private TextField outputField;
     @FXML private TextField configFileField;
@@ -136,6 +139,9 @@ public class OldHomePanelController {
 
     @FXML
     public void initialize() throws URISyntaxException {
+        // Gán instance hiện tại
+        instance = this;
+        
         prefs = Preferences.userNodeForPackage(OldHomePanelController.class);
         String version = VersionUtils.getAppVersionFromResource();
         prefs.put("Version", version);
@@ -677,6 +683,16 @@ public class OldHomePanelController {
             client.close();
             client = null;
         }
+    }
+    
+    // Method public để đóng socket từ bên ngoài
+    public void closeSocketConnection() {
+        closeSocket();
+    }
+    
+    // Method static để lấy instance hiện tại
+    public static OldHomePanelController getInstance() {
+        return instance;
     }
 
     @FXML

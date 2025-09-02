@@ -1,5 +1,6 @@
 package com.phanduy.aliexscrap;
 
+import com.phanduy.aliexscrap.controller.DownloadManager;
 import com.phanduy.aliexscrap.utils.ThreadManager;
 import com.phanduy.aliexscrap.utils.VersionUtils;
 import javafx.application.Application;
@@ -30,7 +31,14 @@ public class AliexScrapperClientApp extends Application {
         primaryStage.show();
 
         primaryStage.setOnCloseRequest(event -> {
+            // Đóng socket connection trước khi thoát
+            OldHomePanelController controller = OldHomePanelController.getInstance();
+            if (controller != null) {
+                controller.closeSocketConnection();
+            }
+            
             ThreadManager.getInstance().shutdown();
+            DownloadManager.getInstance().shutDown();
             Platform.exit();
             System.exit(0);
         });

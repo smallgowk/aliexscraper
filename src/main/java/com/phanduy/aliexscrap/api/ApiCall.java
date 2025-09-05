@@ -101,7 +101,9 @@ public class ApiCall {
         }
 
         if (response.isSuccessful() && response.body() != null) {
-            return response.body().getData();
+            TransformCrawlResponse data = response.body().getData();
+            data.setRemainRequest(response.body().getRemainRequest());
+            return data;
         } else {
             if (response.body() != null && response.body().error != null) {
                 throw new Exception(response.body().error);
@@ -121,7 +123,9 @@ public class ApiCall {
         }
 
         if (response.isSuccessful() && response.body() != null) {
-            return response.body().getData();
+            TransformCrawlResponse data = response.body().getData();
+            data.setRemainRequest(response.body().getRemainRequest());
+            return data;
         } else {
             if (response.body() != null && response.body().error != null) {
                 throw new Exception(response.body().error);

@@ -26,6 +26,9 @@ public class NewTransformCrawlResponse {
     public boolean showTip;
     public NewBulletPointSearchTerm bulletPointSearchTerm;
 
+    public int requestCount;
+    public int remainRequest;
+
     public ArrayList<NewProductAmz> genListProducts(SettingInfo settingInfo) {
         ArrayList<NewProductAmz> results = new ArrayList<>();
         NewProductAmz parent = new NewProductAmz();

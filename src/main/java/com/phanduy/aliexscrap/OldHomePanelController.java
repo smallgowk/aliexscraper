@@ -95,6 +95,8 @@ public class OldHomePanelController {
     @FXML private Button startButton;
     @FXML private Button clearButton;
 
+    @FXML private Label remainRequest;
+    @FXML private Label remainRequestLabel;
     @FXML private Label downloadImageLabel;
     @FXML private Label statusLabel;
 
@@ -183,6 +185,10 @@ public class OldHomePanelController {
                                             statusLabel.setVisible(true);
                                             statusLabel.setText("Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
                                             break;
+                                        case CheckInfoResponse.PRODUCT_LIMIT_IN_DAY:
+                                            statusLabel.setVisible(true);
+                                            statusLabel.setText("Quá hạn request cho một ngày!");
+                                            break;
                                         case CheckInfoResponse.VERSION_INVALID:
                                             prefs.putBoolean("Latest", checkInfoResponse.isLatest());
                                             prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
@@ -197,6 +203,11 @@ public class OldHomePanelController {
                                 } else {
                                     prefs.putBoolean("Latest", checkInfoResponse.isLatest());
                                     prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
+
+                                    remainRequest.setText("" + checkInfoResponse.getRemainRequest());
+                                    remainRequest.setVisible(true);
+                                    remainRequestLabel.setVisible(true);
+
                                     CrawlExecutor.initExecutor(checkInfoResponse.getMaxThreads());
                                     ExportFileExecutor.initExecutor(1);
                                     startButton.setDisable(false);
@@ -845,6 +856,13 @@ public class OldHomePanelController {
                 showInvalidInfo(result);
             });
 
+        }
+
+        @Override
+        public void updateRemainRequest(int remainRequestCount) {
+            Platform.runLater(() -> {
+                remainRequest.setText("" + remainRequestCount);
+            });
         }
     };
 

@@ -13,6 +13,7 @@ public class CrawlExecutor {
 
     public static HashSet<String> bannedSignature = new HashSet<>();
     public static boolean isAuthen = true;
+    public static boolean isStop = true;
 
     public static void initExecutor(int threads) {
         maxThread = threads;
@@ -31,6 +32,7 @@ public class CrawlExecutor {
 
     public static void shutdownNow() {
         ProcessStoreInfoSvs.clearMapData();
+        isStop = true;
         executor.shutdownNow();
     }
 
@@ -56,6 +58,7 @@ public class CrawlExecutor {
 
     public static void executeThread(Thread thread) {
         ensureExecutor();
+        isStop = false;
         executor.submit(() -> {
             thread.start();
             try {

@@ -162,11 +162,11 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 //                    pageNumber
 //            );
 //            List<String> getPageGGProducts = ApiCall.getInstance().getAliexProducts(getAliexProductsReq);
-
+            boolean result = false;
             if (StringUtils.isEmpty(Configs.template)) {
-                processOldFlow(listProducts, aliexStoreInfo);
+                result = processOldFlow(listProducts, aliexStoreInfo);
             } else {
-                processNewFormatFlow(listProducts, aliexStoreInfo);
+                result = processNewFormatFlow(listProducts, aliexStoreInfo);
             }
 //            UpdateCrawlSignatureReq updateCrawlSignatureReq = new UpdateCrawlSignatureReq(
 //                    linkSheetId,
@@ -180,8 +180,9 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 //            } catch (Exception ex) {
 //                System.out.println("" + ex.getMessage());
 //            }
-
-            crawlProcessListener.onPushState(signature, pageNumber, "Done");
+            if (result) {
+                crawlProcessListener.onPushState(signature, pageNumber, "Done");
+            }
 //            crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
         } catch (Exception ex) {
             try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {
@@ -210,9 +211,14 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 ApiCall.getInstance().getNewTemplateProduct(transformRapidDataReq);
     }
 
-    public void processNewFormatFlow(List<String> items, AliexStoreInfo aliexStoreInfo) throws Exception {
-        if (isStop) {
-            return;
+    public boolean processNewFormatFlow(List<String> items, AliexStoreInfo aliexStoreInfo) throws Exception {
+        if (isStop || CrawlExecutor.isStop) {
+            crawlProcessListener.onPushState(
+                    signature,
+                    pageNumber,
+                    "Stop"
+            );
+            return false;
         }
 
         int size = items.size();
@@ -226,8 +232,13 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         HashMap<String, RapidStoreSeller> hashMapStore = new HashMap<>();
 
         for (int j = 0; j < size; j++) {
-            if (isStop) {
-                return;
+            if (isStop || CrawlExecutor.isStop) {
+                crawlProcessListener.onPushState(
+                        signature,
+                        pageNumber,
+                        "Stop"
+                );
+                return false;
             }
             String productId = items.get(j);
             TransformCrawlResponse res = CacheSvs.getInstance().getProductResFromCache(productId, keyCache);
@@ -245,6 +256,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 try {
                     TransformCrawlResponse data = ApiCall.getInstance().getNewTemplateProduct(transformRapidDataReq);
                     if (data.isSuccess()) {
+                        crawlProcessListener.updateRemainRequest(data.getRemainRequest());
                         isHasShip = true;
                         CacheSvs.getInstance().saveProductInfo(data, keyCache);
                         data.updateImageDownloads();
@@ -270,7 +282,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                                 System.out.println("" + ex.getMessage());
                             }
                             crawlProcessListener.onStop(data.getMessage());
-                            return;
+                            return false;
                         } else {
                             CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
                             processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, data.getMessage());
@@ -291,7 +303,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                         }
                         CrawlExecutor.addSignatureToBanned(signature);
                         crawlProcessListener.onPushState(signature, pageNumber, "Post.");
-                        return;
+                        return false;
                     }
                     processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, e.getMessage());
                 }
@@ -371,15 +383,26 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         );
         successCount += processStoreInfoSvs.getSuccessCount(aliexStoreInfo.getStoreSign(), page);
 //        processStoreInfoSvs.clearMapData();
+        return true;
     }
 
-    public void processOldFlow(List<String> getPageGGProducts, AliexStoreInfo aliexStoreInfo) throws Exception {
-        if (isStop) {
-            return;
+    public boolean processOldFlow(List<String> getPageGGProducts, AliexStoreInfo aliexStoreInfo) throws Exception {
+        if (isStop || CrawlExecutor.isStop) {
+            crawlProcessListener.onPushState(
+                    signature,
+                    pageNumber,
+                    "Stop"
+            );
+            return false;
         }
 
         if (getPageGGProducts == null) {
-            return;
+            crawlProcessListener.onPushState(
+                    signature,
+                    pageNumber,
+                    "Stop"
+            );
+            return false;
         }
 
         int size = getPageGGProducts.size();
@@ -394,8 +417,13 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         HashMap<String, RapidStoreSeller> hashMapStore = new HashMap<>();
 
         for (int j = 0; j < size; j++) {
-            if (isStop) {
-                return;
+            if (isStop || CrawlExecutor.isStop) {
+                crawlProcessListener.onPushState(
+                        signature,
+                        pageNumber,
+                        "Stop"
+                );
+                return false;
             }
             String productId = getPageGGProducts.get(j);
             TransformCrawlResponse res = CacheSvs.getInstance().getProductResFromCache(productId, keyCache);
@@ -414,6 +442,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 try {
                     TransformCrawlResponse data = ApiCall.getInstance().getOldTemplateProduct(transformRapidDataReq);
                     if (data.isSuccess()) {
+                        crawlProcessListener.updateRemainRequest(data.getRemainRequest());
                         isHasShip = true;
                         CacheSvs.getInstance().saveProductInfo(data, keyCache);
                         processStoreInfoSvs.processRapidProduct(
@@ -442,7 +471,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                             } catch (Exception ex) {
                                 System.out.println("" + ex.getMessage());
                             }
-                            return;
+                            return false;
                         } else {
                             CacheSvs.getInstance().saveProductInfo(new TransformCrawlResponse(productId), keyCache);
                             processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, data.getMessage());
@@ -468,7 +497,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                                 pageNumber,
                                 "Post."
                         );
-                        return;
+                        return  false;
                     }
                     processStoreInfoSvs.processErrorProducts(productId, aliexStoreInfo.getStoreSign(), page, e.getMessage());
                 }
@@ -545,5 +574,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 
         successCount += processStoreInfoSvs.getSuccessCount(aliexStoreInfo.getStoreSign(), page);
 //        processStoreInfoSvs.clearMapData();
+        return true;
     }
 }

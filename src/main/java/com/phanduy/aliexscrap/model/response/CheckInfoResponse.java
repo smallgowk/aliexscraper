@@ -27,6 +27,8 @@ public class CheckInfoResponse {
     private String latestVersion;
     private int maxThreads;
 
+    private int remainRequest;
+
     public int getResultCode() {
         return resultCode;
     }
@@ -49,5 +51,13 @@ public class CheckInfoResponse {
 
     public boolean isSuccess() {
         return resultCode == 0 || resultCode == SUCCESS;
+    }
+
+    public int getRemainRequest() {
+        return remainRequest;
+    }
+
+    public void setRemainRequest(int remainRequest) {
+        this.remainRequest = remainRequest;
     }
 }

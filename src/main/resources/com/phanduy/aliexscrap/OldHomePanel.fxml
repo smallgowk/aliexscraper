@@ -91,6 +91,9 @@
                     <Button fx:id="clearButton" text="Clear"
                             onAction="#onClearButton"/>
                     <Label fx:id="downloadImageLabel" text="" visible="true" style="-fx-text-fill: blue;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="remainRequestLabel" text="Remain requests: " visible="false" style="-fx-text-fill: blue;"/>
+                    <Label fx:id="remainRequest" text="" visible="false" style="-fx-text-fill: blue;"/>
                 </HBox>
             </VBox>
         </children>

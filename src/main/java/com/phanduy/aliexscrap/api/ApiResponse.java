@@ -7,6 +7,10 @@ public class ApiResponse<T> {
 
     public String error;
 
+    int requestCount;
+
+    int remainRequest;
+
     private T data; // Có thể đổi thành kiểu dữ liệu phù hợp
 
     public boolean isSuccess() {
@@ -19,5 +23,13 @@ public class ApiResponse<T> {
 
     public T getData() {
         return data;
+    }
+
+    public int getRequestCount() {
+        return requestCount;
+    }
+
+    public int getRemainRequest() {
+        return remainRequest;
     }
 }

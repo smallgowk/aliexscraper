@@ -15,6 +15,7 @@ import com.phanduy.aliexscrap.model.response.ResponseObj;
 public interface CrawlProcessListener {
     public void onPushState(String signature, String pageNumber, String status);
     public void onStop(String result);
+    public void updateRemainRequest(int remainRequest);
 //    public void onPushErrorRequest(String storeSign, ResponseObj responseObj);
 //    public void onStartProcess(String storeSign, String info);
 //    public void onStop(String storeSign);

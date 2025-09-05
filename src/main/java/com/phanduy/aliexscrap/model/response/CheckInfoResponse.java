@@ -25,6 +25,7 @@ public class CheckInfoResponse {
     private String message;
     private boolean latest;
     private String latestVersion;
+    private String owner;
     private int maxThreads;
 
     private int remainRequest;
@@ -59,5 +60,9 @@ public class CheckInfoResponse {
 
     public void setRemainRequest(int remainRequest) {
         this.remainRequest = remainRequest;
+    }
+
+    public String getOwner() {
+        return owner;
     }
 }

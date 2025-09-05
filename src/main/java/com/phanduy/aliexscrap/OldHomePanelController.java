@@ -203,6 +203,7 @@ public class OldHomePanelController {
                                 } else {
                                     prefs.putBoolean("Latest", checkInfoResponse.isLatest());
                                     prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
+                                    prefs.put("owner", checkInfoResponse.getOwner());
 
                                     remainRequest.setText("" + checkInfoResponse.getRemainRequest());
                                     remainRequest.setVisible(true);
@@ -292,6 +293,9 @@ public class OldHomePanelController {
                     String subscribeFrame = "SUBSCRIBE\nid:sub-0\ndestination:/topic/messages\n\n\u0000";
                     this.send(subscribeFrame);
 
+                    String subscribeBroadcastFrame = "SUBSCRIBE\nid:sub-broadcast\ndestination:/topic/broadcast\n\n\u0000";
+                    this.send(subscribeBroadcastFrame);
+
                     // Subscribe để nhận response đăng ký
                     String subscribeRegistrationFrame = "SUBSCRIBE\nid:sub-registration\ndestination:/queue/registration\n\n\u0000";
                     this.send(subscribeRegistrationFrame);
@@ -307,22 +311,35 @@ public class OldHomePanelController {
                         String json = message.substring(jsonStart + 1).trim();
                         try {
                             JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
-                            String diskSerialNumber = obj.has("diskSerialNumber") ? obj.get("diskSerialNumber").getAsString() : null;
-                            String signature = obj.has("signature") ? obj.get("signature").getAsString() : null;
-                            String linkSheetId = obj.has("linkSheetId") ? obj.get("linkSheetId").getAsString() : null;
-                            String linkSheetName = obj.has("linkSheetName") ? obj.get("linkSheetName").getAsString() : null;
-                            String pageNumber = obj.has("pageNumber") ? obj.get("pageNumber").getAsString() : null;
-                            ArrayList<String> listProducts = parseListProducts(obj);
-                            System.out.println("List: " + listProducts);
+                            if (obj.has("action")) {
+                                String action = obj.get("action").getAsString();
+                                if (action.equalsIgnoreCase("CRAWLING")) {
+                                    String diskSerialNumber = obj.has("diskSerialNumber") ? obj.get("diskSerialNumber").getAsString() : null;
+                                    String signature = obj.has("signature") ? obj.get("signature").getAsString() : null;
+                                    String linkSheetId = obj.has("linkSheetId") ? obj.get("linkSheetId").getAsString() : null;
+                                    String linkSheetName = obj.has("linkSheetName") ? obj.get("linkSheetName").getAsString() : null;
+                                    String pageNumber = obj.has("pageNumber") ? obj.get("pageNumber").getAsString() : null;
+                                    ArrayList<String> listProducts = parseListProducts(obj);
 
-                            String machineId = ComputerIdentifier.getDiskSerialNumber(); // Thay bằng ID thực tế của máy
+                                    String machineId = ComputerIdentifier.getDiskSerialNumber(); // Thay bằng ID thực tế của máy
 
-                            String registerFrame = "SEND\ndestination:/app/register\ncontent-type:application/json\n\n" +
-                                    "{\"machineId\":\"" + machineId + "\",\"linkSheetId\":\"" + linkSheetId + "\"}\u0000";
-                            this.send(registerFrame);
+                                    String registerFrame = "SEND\ndestination:/app/register\ncontent-type:application/json\n\n" +
+                                            "{\"machineId\":\"" + machineId + "\",\"linkSheetId\":\"" + linkSheetId + "\"}\u0000";
+                                    this.send(registerFrame);
 
-                            if (ComputerIdentifier.getDiskSerialNumber().equals(diskSerialNumber) && signature != null && pageNumber != null) {
-                                startCrawling(signature, linkSheetId, linkSheetName, pageNumber, listProducts);
+                                    if (ComputerIdentifier.getDiskSerialNumber().equals(diskSerialNumber) && signature != null && pageNumber != null) {
+                                        startCrawling(signature, linkSheetId, linkSheetName, pageNumber, listProducts);
+                                    }
+                                } else if (action.equalsIgnoreCase("UPDATE_REQUEST")){
+                                    String owner = obj.has("owner") ? obj.get("owner").getAsString() : null;
+                                    if (!StringUtils.isEmpty(owner) && owner.equalsIgnoreCase(prefs.get("owner", null))) {
+                                        String remainRequestValue = obj.has("remainRequest") ? obj.get("remainRequest").getAsString() : null;
+                                        Platform.runLater( () ->
+                                                remainRequest.setText(remainRequestValue)
+                                        );
+                                    }
+
+                                }
                             }
                         } catch (Exception e) {
                             System.out.println("Lỗi parse JSON từ message: " + e.getMessage());
@@ -860,9 +877,9 @@ public class OldHomePanelController {
 
         @Override
         public void updateRemainRequest(int remainRequestCount) {
-            Platform.runLater(() -> {
-                remainRequest.setText("" + remainRequestCount);
-            });
+//            Platform.runLater(() -> {
+//                remainRequest.setText("" + remainRequestCount);
+//            });
         }
     };
 

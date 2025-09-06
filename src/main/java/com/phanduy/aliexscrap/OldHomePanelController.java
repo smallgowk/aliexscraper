@@ -334,9 +334,19 @@ public class OldHomePanelController {
                                     String owner = obj.has("owner") ? obj.get("owner").getAsString() : null;
                                     if (!StringUtils.isEmpty(owner) && owner.equalsIgnoreCase(prefs.get("owner", null))) {
                                         String remainRequestValue = obj.has("remainRequest") ? obj.get("remainRequest").getAsString() : null;
-                                        Platform.runLater( () ->
-                                                remainRequest.setText(remainRequestValue)
-                                        );
+                                        try {
+                                            long value = Long.parseLong(remainRequestValue);
+                                            String current = remainRequest.getText();
+                                            long currentValue = Long.parseLong(current);
+                                            if (currentValue > value) {
+                                                Platform.runLater(() -> {
+                                                            remainRequest.setText(value >= 0 ? remainRequestValue : "0");
+                                                        }
+                                                );
+                                            }
+                                        } catch (NumberFormatException ex) {
+                                            System.out.println(message + ": " + ex.getMessage());
+                                        }
                                     }
 
                                 }

@@ -16,7 +16,7 @@ public class ExportFileNewFlowThread extends Thread {
     private String cagetory;
     private ProcessStoreInfoSvs processStoreInfoSvs;
 
-    public ExportFileNewFlowThread(ProcessStoreInfoSvs processStoreInfoSvs, AliexPageInfo aliexPageInfo, ArrayList<TransformCrawlResponse> listResults, int page, String cagetory, AliexStoreInfo aliexStoreInfo) {
+    public ExportFileNewFlowThread(ProcessStoreInfoSvs processStoreInfoSvs, AliexPageInfo aliexPageInfo, ArrayList<TransformCrawlResponse> listResults, int page, AliexStoreInfo aliexStoreInfo) {
         this.processStoreInfoSvs = processStoreInfoSvs;
         this.aliexPageInfo = aliexPageInfo;
         this.listResults = listResults;
@@ -28,7 +28,7 @@ public class ExportFileNewFlowThread extends Thread {
     @Override
     public void run() {
         try {
-            processStoreInfoSvs.processPageInfoNew(aliexStoreInfo, aliexPageInfo, page, listResults, cagetory);
+            processStoreInfoSvs.processPageInfoNew(aliexStoreInfo, aliexPageInfo, page, listResults);
         } catch (Exception ex) {
             ex.printStackTrace();
         }

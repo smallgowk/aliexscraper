@@ -342,7 +342,6 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
                 aliexPageInfo,
                 listResults,
                 page,
-                baseStoreOrderInfo.getCategory(),
                 aliexStoreInfo
         ));
 

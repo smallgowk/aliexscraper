@@ -37,6 +37,7 @@ public class TransformCrawlResponse extends CheckInfoResponse{
     public String image_7;
     public String image_8;
     public String image_9;
+    public String category;
     public ArrayList<NewProduct> listProducts;
 
     public RapidStoreSeller storeInfo;

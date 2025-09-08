@@ -546,7 +546,7 @@ public class ProcessStoreInfoSvs {
         mapErrorsProducts.remove(keyProduct);
     }
 
-    public void processPageInfoNew(AliexStoreInfo aliexStoreInfo, AliexPageInfo aliexPageInfo, int page, ArrayList<TransformCrawlResponse> listResults, String cagetory) {
+    public void processPageInfoNew(AliexStoreInfo aliexStoreInfo, AliexPageInfo aliexPageInfo, int page, ArrayList<TransformCrawlResponse> listResults) {
         String localImageFolder = aliexStoreInfo.getLocalImageFolder();
         if (localImageFolder != null && Configs.downloadAllImage == 1) {
             for (TransformCrawlResponse response : listResults) {
@@ -557,7 +557,7 @@ public class ProcessStoreInfoSvs {
 
         String fileName = genExcelFileNameWithPage(aliexStoreInfo, page);
         try {
-            ExcelUtils.saveListProductsToExcelNew(listResults, fileName, Configs.excelSampleFilePath, aliexStoreInfo, false, cagetory);
+            ExcelUtils.saveListProductsToExcelNew(listResults, fileName, Configs.excelSampleFilePath, aliexStoreInfo, false);
         } catch (EncryptedDocumentException | InvalidFormatException | IOException ex) {
             java.util.logging.Logger.getLogger(ProcessPageDataSvs.class.getName()).log(Level.SEVERE, null, ex);
         }

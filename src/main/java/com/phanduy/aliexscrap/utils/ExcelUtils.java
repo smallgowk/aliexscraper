@@ -167,7 +167,7 @@ public class ExcelUtils {
         }
     }
     
-    public static void saveListProductsToExcelNew(ArrayList<TransformCrawlResponse> listResponses, String newFilePath, String sampleFilePath, AliexStoreInfo aliexStoreInfo, boolean isSaveAllData, String category) throws EncryptedDocumentException, InvalidFormatException, IOException {
+    public static void saveListProductsToExcelNew(ArrayList<TransformCrawlResponse> listResponses, String newFilePath, String sampleFilePath, AliexStoreInfo aliexStoreInfo, boolean isSaveAllData) throws EncryptedDocumentException, InvalidFormatException, IOException {
         if (listResponses == null || listResponses.isEmpty()) {
             return;
         }
@@ -261,7 +261,7 @@ public class ExcelUtils {
             for (TransformCrawlResponse response : listResponses) {
                 if (response.listProducts == null || response.listProducts.isEmpty()) continue;
                 for (NewProduct newProduct : response.listProducts) {
-                    createRow(sheet, response, newProduct, category, rowNum++, hashMapField, cellMax);
+                    createRow(sheet, response, newProduct, rowNum++, hashMapField, cellMax);
                 }
             }
 
@@ -292,7 +292,7 @@ public class ExcelUtils {
         }
     }
     
-    private static void createRow(Sheet sheet, TransformCrawlResponse response, NewProduct newProduct, String category, int rowNum, HashMap<Integer, String> hashMapField, int cellMax) {
+    private static void createRow(Sheet sheet, TransformCrawlResponse response, NewProduct newProduct, int rowNum, HashMap<Integer, String> hashMapField, int cellMax) {
         if (newProduct == null) return;
         Row row = sheet.createRow(rowNum);
         
@@ -302,7 +302,7 @@ public class ExcelUtils {
             if (fieldName == null) continue;
             switch (fieldName) {
                 case "category":
-                    row.createCell(i).setCellValue(category);
+                    row.createCell(i).setCellValue(response.category);
                     break;
                 case "brand":
                     row.createCell(i).setCellValue(response.brand);

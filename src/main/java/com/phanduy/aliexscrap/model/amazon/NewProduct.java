@@ -5,7 +5,9 @@ import com.phanduy.aliexscrap.utils.StringUtils;
 import java.util.regex.Pattern;
 
 public class NewProduct {
+    public String property_value_1_name;
     public String property_value_1;
+    public String property_value_2_name;
     public String property_value_2;
     public String property_value_1_image;
     public String price;

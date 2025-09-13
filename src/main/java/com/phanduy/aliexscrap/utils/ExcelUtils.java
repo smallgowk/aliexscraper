@@ -342,13 +342,22 @@ public class ExcelUtils {
                 case "product image 9":
                     row.createCell(i).setCellValue(response.image_9);
                     break;
+                case "primary variation name":
+                    row.createCell(i).setCellValue(newProduct.property_value_1_name);
+                    break;
                 case "variation 1":
+                case "primary variation value":
                     row.createCell(i).setCellValue(newProduct.property_value_1);
                     break;
+                case "secondary variation name":
+                    row.createCell(i).setCellValue(newProduct.property_value_2_name);
+                    break;
                 case "variation 2":
+                case "secondary variation value":
                     row.createCell(i).setCellValue(newProduct.property_value_2);
                     break;
                 case "variant image":
+                case "primary variation image 1":
                     row.createCell(i).setCellValue(newProduct.property_value_1_image);
                     break;
                 case "package weight(lb)":

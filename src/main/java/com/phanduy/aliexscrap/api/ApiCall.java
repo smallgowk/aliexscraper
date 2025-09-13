@@ -4,6 +4,7 @@ import com.phanduy.aliexscrap.model.response.*;
 import com.phanduy.aliexscrap.model.request.*;
 import com.phanduy.aliexscrap.model.request.UpdateCrawlSignatureReq;
 import com.phanduy.aliexscrap.model.response.UpdateCrawlSignatureResponse;
+import com.phanduy.aliexscrap.utils.StringUtils;
 import retrofit2.Call;
 import retrofit2.Response;
 
@@ -176,6 +177,7 @@ public class ApiCall {
     }
 
     public UpdateCrawlSignatureResponse updateCrawlSignature(UpdateCrawlSignatureReq req) throws Exception {
+        if (StringUtils.isEmpty(req.id)) return null;
         Call<ApiResponse<UpdateCrawlSignatureResponse>> call = apiGGService.updateCrawlSignature(req);
         Response<ApiResponse<UpdateCrawlSignatureResponse>> response = null;
         try {

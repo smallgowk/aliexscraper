@@ -122,22 +122,23 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             aliexStoreInfo.setStoreSign(signature);
             String computerSerial = ComputerIdentifier.getDiskSerialNumber().replaceAll(" ", "-");
 
-            UpdateCrawlSignatureReq updateCrawlSignatureReq = new UpdateCrawlSignatureReq(
-                    linkSheetId,
-                    signature
-            );
-            updateCrawlSignatureReq.notes = Configs.getConfigInfo(
-                    toolParams,
-                    computerSerial
-            );
-            updateCrawlSignatureReq.status = "Getting";
+            if (!StringUtils.isEmpty(linkSheetId)) {
+                UpdateCrawlSignatureReq updateCrawlSignatureReq = new UpdateCrawlSignatureReq(
+                        linkSheetId,
+                        signature
+                );
+                updateCrawlSignatureReq.notes = Configs.getConfigInfo(
+                        toolParams,
+                        computerSerial
+                );
+                updateCrawlSignatureReq.status = "Getting";
 
-            try {
-                ApiCall.getInstance().updateCrawlSignature(updateCrawlSignatureReq);
-            } catch (Exception ex) {
-                System.out.println("" + ex.getMessage());
+                try {
+                    ApiCall.getInstance().updateCrawlSignature(updateCrawlSignatureReq);
+                } catch (Exception ex) {
+                    System.out.println("" + ex.getMessage());
+                }
             }
-
             processData(aliexStoreInfo, computerSerial, listProducts);
         } catch (Exception ex) {
             try (java.io.FileWriter fw = new java.io.FileWriter("error.log", true)) {

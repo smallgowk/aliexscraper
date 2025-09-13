@@ -11,6 +11,7 @@ import com.phanduy.aliexscrap.controller.thread.ExportFileExecutor;
 import com.phanduy.aliexscrap.controller.thread.ProcessCrawlRapidNoCrawlThread;
 import com.phanduy.aliexscrap.interfaces.CrawlProcessListener;
 import com.phanduy.aliexscrap.interfaces.DownloadListener;
+import com.phanduy.aliexscrap.model.ProductPage;
 import com.phanduy.aliexscrap.model.aliex.store.inputdata.BaseStoreOrderInfo;
 import com.phanduy.aliexscrap.model.request.CheckInfoReq;
 import com.phanduy.aliexscrap.model.request.UpdateCrawlSignatureReq;
@@ -88,12 +89,15 @@ public class OldHomePanelController {
     @FXML private TextField outputField;
     @FXML private TextField configFileField;
     @FXML private TextField diskField;
+    @FXML private TextField productIdsField;
 
     @FXML private Button browseOutput;
     @FXML private Button browseConfigFile;
     @FXML private Button browseTemplate1;
     @FXML private Button startButton;
     @FXML private Button clearButton;
+    @FXML private Button browseproductIdsFile;
+    @FXML private Button fetchButton;
 
     @FXML private Label remainRequest;
     @FXML private Label remainRequestLabel;
@@ -152,6 +156,7 @@ public class OldHomePanelController {
         loadSettings();
         DownloadManager.getInstance().setListener(downloadListener);
         startButton.setDisable(true);
+        fetchButton.setDisable(true);
         clearButton.setDisable(true);
         ThreadManager.getInstance().submitTask(
                 () -> {
@@ -280,6 +285,7 @@ public class OldHomePanelController {
                 this.send(connectFrame);
                 Platform.runLater(() -> {
                     startButton.setText("Stop");
+                    fetchButton.setDisable(false);
                     statusLabel.setVisible(true);
                     statusLabel.setText("Chờ nhận tín hiệu từ extension!");
                 });
@@ -362,8 +368,9 @@ public class OldHomePanelController {
             public void onClose(int code, String reason, boolean remote) {
                 System.out.println("Duyuno Closed: " + reason);
                 Platform.runLater(() -> {
-                    startButton.setText("Start");
+                    startButton.setText("Listen");
                     statusLabel.setVisible(false);
+                    fetchButton.setDisable(true);
                 });
             }
 
@@ -371,7 +378,8 @@ public class OldHomePanelController {
             public void onError(Exception ex) {
                 ex.printStackTrace();
                 Platform.runLater(() -> {
-                    startButton.setText("Start");
+                    startButton.setText("Listen");
+                    fetchButton.setDisable(true);
                     statusLabel.setVisible(true);
                     statusLabel.setText("" + ex.getMessage());
                 });
@@ -544,6 +552,11 @@ public class OldHomePanelController {
     }
 
     @FXML
+    private void onOpenProductIdsFile() {
+        FileOpener.openFileOrFolder(productIdsField.getText());
+    }
+
+    @FXML
     private void onOpenConfigFile() {
         FileOpener.openFileOrFolder(configFileField.getText());
     }
@@ -667,6 +680,79 @@ public class OldHomePanelController {
     }
 
     @FXML
+    private void onFetchProductIdsFile() {
+        String productIdsFilePath = productIdsField.getText();
+        
+        if (StringUtils.isEmpty(productIdsFilePath)) {
+            AlertUtil.showError("", "Product IDs file not selected!");
+            return;
+        }
+        
+        File checkFile = new File(productIdsFilePath);
+        if (!checkFile.exists()) {
+            AlertUtil.showError("", "Product IDs file does not exist!");
+            return;
+        }
+        
+        try {
+            // Sử dụng SimpleExcelReader để đọc file
+            ArrayList<ProductPage> pages = ExcelReader.readProductIdsFromExcel(productIdsFilePath);
+            String fileName = new File(productIdsFilePath).getName().replaceFirst("[.][^.]+$", "");
+            
+            if (pages.isEmpty()) {
+                AlertUtil.showAlert("Info", "No product IDs found in the file!");
+                return;
+            }
+            
+            // Hiển thị thông tin về số lượng pages và tổng số IDs
+            int totalIds = pages.stream().mapToInt(page -> page.getIds().size()).sum();
+
+            for (int i = 0; i < Math.min(3, pages.size()); i++) {
+                ProductPage page = pages.get(i);
+                startCrawling("Local_" + fileName, null, null, page.getPageNumber(), page.getIds());
+            }
+            
+            // Lưu danh sách pages để sử dụng sau này
+            // Có thể lưu vào một biến instance để sử dụng trong quá trình crawl
+            
+        } catch (Exception e) {
+            AlertUtil.showError("Error", "Failed to read product IDs file: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void onBrowserProductIdsFile() {
+        String currentPath = productIdsField.getText();
+        String folderPath = null;
+        if (currentPath.isEmpty()) {
+            folderPath = ".";
+        } else {
+            folderPath = currentPath.substring(0, currentPath.lastIndexOf("\\"));
+        }
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setInitialDirectory(new File(folderPath));
+
+        // Set the title for the FileChooser dialog
+        fileChooser.setTitle("Select Excel File");
+
+        // Restrict the selection to Excel files
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Excel Files", "*.xls", "*.xlsx")
+        );
+
+        // Show the dialog and get the selected file
+        Stage stage = (Stage) browseproductIdsFile.getScene().getWindow();
+        File selectedFile = fileChooser.showOpenDialog(stage);
+
+        // Process the selected file
+        if (selectedFile != null) {
+            productIdsField.setText(selectedFile.getAbsolutePath());
+            prefs.put("productIdsField", selectedFile.getAbsolutePath());
+        }
+    }
+
+    @FXML
     private void onOpenAmzProductTempFile1() {
         FileOpener.openFileOrFolder(amzProductTemplate1Field.getText());
     }
@@ -712,6 +798,7 @@ public class OldHomePanelController {
     private void loadSettings() {
         outputField.setText(prefs.get("outputField", ""));
         configFileField.setText(prefs.get("configFileField", ""));
+        productIdsField.setText(prefs.get("productIdsField", ""));
         amzProductTemplate1Field.setText(prefs.get("amzProductTemplate1Field", ""));
         System.out.println("Settings Loaded!");
     }
@@ -739,7 +826,8 @@ public class OldHomePanelController {
             client.close();
             client = null;
             CrawlExecutor.shutdownNow();
-            startButton.setText("Start");
+            startButton.setText("Listen");
+            fetchButton.setDisable(true);
             // Enable clearButton nếu table có data
             if (!crawlTaskList.isEmpty()) {
                 clearButton.setDisable(false);
@@ -879,7 +967,7 @@ public class OldHomePanelController {
             }
 
             Platform.runLater(() -> {
-                startButton.setText("Start");
+                startButton.setText("Listen");
                 showInvalidInfo(result);
             });
 

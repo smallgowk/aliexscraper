@@ -76,6 +76,8 @@
                     <Region fx:id="leftSpacer" HBox.hgrow="ALWAYS"/>
                     <Label fx:id="statusLabel" text="" visible="false" style="-fx-text-fill: blue;" alignment="CENTER"/>
                     <Region fx:id="rightSpacer" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="syncCache" text="Load Cache"
+                            onAction="#onSyncCache"/>
                 </HBox>
 
                 <HBox spacing="10" alignment="CENTER_LEFT">
@@ -85,7 +87,7 @@
                             onAction="#onBrowserProductIdsFile"/>
                     <Button text="Open"
                             onAction="#onOpenProductIdsFile"/>
-                    <Button fx:id="fetchButton" text="Fetch"
+                    <Button fx:id="fetchButton" text="Load Data" prefWidth="79.5"
                             onAction="#onFetchProductIdsFile"/>
                 </HBox>
 

@@ -22,6 +22,7 @@ import com.phanduy.aliexscrap.model.response.*;
 import com.phanduy.aliexscrap.utils.ComputerIdentifier;
 import com.phanduy.aliexscrap.utils.DialogUtil;
 import com.phanduy.aliexscrap.utils.StringUtils;
+import com.phanduy.aliexscrap.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +46,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
     String linkSheetId;
     String pageNumber;
     ArrayList<String> listProducts;
+    boolean fromRemote = true;
 
 //    StringBuffer sb;
     public ProcessCrawlRapidNoCrawlThread(
@@ -52,15 +54,16 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             HashMap<String, String> toolParams,
             String signature,
             String linkSheetId,
-            String linkSheetName,
             String pageNumber,
             CrawlProcessListener crawlProcessListener,
-            ArrayList<String> listProducts
+            ArrayList<String> listProducts,
+            boolean fromRemote
     ) {
         this.signature = signature;
         this.linkSheetId = linkSheetId;
         this.pageNumber = pageNumber;
         this.listProducts = listProducts;
+        this.fromRemote = fromRemote;
         try {
             this.baseStoreOrderInfo = baseStoreOrderInfo;
             this.toolParams = toolParams;
@@ -183,6 +186,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
 //            }
             if (result) {
                 crawlProcessListener.onPushState(signature, pageNumber, "Done");
+                Utils.removeSignatureCache(signature, pageNumber);
             }
 //            crawlProcessListener.onFinishPage(aliexStoreInfo.getStoreSign());
         } catch (Exception ex) {

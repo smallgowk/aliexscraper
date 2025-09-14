@@ -78,6 +78,7 @@ public class Configs {
 //    public static String FIXING_PRODUCT_PATH;
     public static String CACHE_DIR;
     public static String CACHE_PATH;
+    public static String SIGNATURE_CACHE_PATH;
     public static String ERROR_PRODUCT_PATH;
     public static String COOKIE_PATH;
     public static String LOG_PATH;
@@ -219,6 +220,7 @@ public class Configs {
         CACHE_DIR  = dir + pathChar + ".aliexscrap";
         ERROR_PRODUCT_PATH = String.valueOf(CACHE_DIR + pathChar + ERROR_PRODUCT_DIRECTORY + pathChar);
         CACHE_PATH = String.valueOf(CACHE_DIR + pathChar + CACHE_DIRECTORY + pathChar);
+        SIGNATURE_CACHE_PATH = CACHE_PATH + "signature";
         LOG_PATH = CACHE_PATH;
         COOKIE_PATH = String.valueOf(CACHE_PATH + COOKIE_CACHE_FILE);
 
@@ -243,6 +245,10 @@ public class Configs {
         }
 
         cacheDirectory = new File(CACHE_PATH + PRODUCT_CACHE_DIR_V2);
+        if (!cacheDirectory.exists()) {
+            cacheDirectory.mkdirs();
+        }
+        cacheDirectory = new File(SIGNATURE_CACHE_PATH);
         if (!cacheDirectory.exists()) {
             cacheDirectory.mkdirs();
         }

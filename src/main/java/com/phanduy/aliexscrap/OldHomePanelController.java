@@ -98,6 +98,7 @@ public class OldHomePanelController {
     @FXML private Button clearButton;
     @FXML private Button browseproductIdsFile;
     @FXML private Button fetchButton;
+    @FXML private Button syncCache;
 
     @FXML private Label remainRequest;
     @FXML private Label remainRequestLabel;
@@ -157,6 +158,7 @@ public class OldHomePanelController {
         DownloadManager.getInstance().setListener(downloadListener);
         startButton.setDisable(true);
         fetchButton.setDisable(true);
+        syncCache.setDisable(true);
         clearButton.setDisable(true);
         ThreadManager.getInstance().submitTask(
                 () -> {
@@ -286,9 +288,12 @@ public class OldHomePanelController {
                 Platform.runLater(() -> {
                     startButton.setText("Stop");
                     fetchButton.setDisable(false);
+                    syncCache.setDisable(false);
                     statusLabel.setVisible(true);
                     statusLabel.setText("Chờ nhận tín hiệu từ extension!");
                 });
+
+
             }
 
             @Override
@@ -323,9 +328,10 @@ public class OldHomePanelController {
                                     String diskSerialNumber = obj.has("diskSerialNumber") ? obj.get("diskSerialNumber").getAsString() : null;
                                     String signature = obj.has("signature") ? obj.get("signature").getAsString() : null;
                                     String linkSheetId = obj.has("linkSheetId") ? obj.get("linkSheetId").getAsString() : null;
-                                    String linkSheetName = obj.has("linkSheetName") ? obj.get("linkSheetName").getAsString() : null;
+//                                    String linkSheetName = obj.has("linkSheetName") ? obj.get("linkSheetName").getAsString() : null;
                                     String pageNumber = obj.has("pageNumber") ? obj.get("pageNumber").getAsString() : null;
                                     ArrayList<String> listProducts = parseListProducts(obj);
+                                    prefs.put("linkSheetId", linkSheetId);
 
                                     String machineId = ComputerIdentifier.getDiskSerialNumber(); // Thay bằng ID thực tế của máy
 
@@ -334,7 +340,7 @@ public class OldHomePanelController {
                                     this.send(registerFrame);
 
                                     if (ComputerIdentifier.getDiskSerialNumber().equals(diskSerialNumber) && signature != null && pageNumber != null) {
-                                        startCrawling(signature, linkSheetId, linkSheetName, pageNumber, listProducts);
+                                        startCrawling(signature, linkSheetId, pageNumber, listProducts, true);
                                     }
                                 } else if (action.equalsIgnoreCase("UPDATE_REQUEST")){
                                     String owner = obj.has("owner") ? obj.get("owner").getAsString() : null;
@@ -371,6 +377,7 @@ public class OldHomePanelController {
                     startButton.setText("Listen");
                     statusLabel.setVisible(false);
                     fetchButton.setDisable(true);
+                    syncCache.setDisable(true);
                 });
             }
 
@@ -380,6 +387,7 @@ public class OldHomePanelController {
                 Platform.runLater(() -> {
                     startButton.setText("Listen");
                     fetchButton.setDisable(true);
+                    syncCache.setDisable(true);
                     statusLabel.setVisible(true);
                     statusLabel.setText("" + ex.getMessage());
                 });
@@ -680,6 +688,21 @@ public class OldHomePanelController {
     }
 
     @FXML
+    private void onSyncCache() {
+        ArrayList<ProductPage> pages = Utils.loadCacheData();
+        if (pages != null && !pages.isEmpty()) {
+            String linkSheetId = prefs.get("linkSheetId", null);
+            if (!StringUtils.isEmpty(linkSheetId)) {
+                for (ProductPage productPage : pages) {
+                    startCrawling(productPage.getSignature(), linkSheetId, productPage.getPageNumber(), productPage.getIds(), false);
+                }
+            }
+        } else {
+            AlertUtil.showAlert("Cache Data", "Không có dữ liệu cache!");
+        }
+    }
+
+    @FXML
     private void onFetchProductIdsFile() {
         String productIdsFilePath = productIdsField.getText();
         
@@ -703,18 +726,10 @@ public class OldHomePanelController {
                 AlertUtil.showAlert("Info", "No product IDs found in the file!");
                 return;
             }
-            
-            // Hiển thị thông tin về số lượng pages và tổng số IDs
-            int totalIds = pages.stream().mapToInt(page -> page.getIds().size()).sum();
 
-            for (int i = 0; i < Math.min(3, pages.size()); i++) {
-                ProductPage page = pages.get(i);
-                startCrawling("Local_" + fileName, null, null, page.getPageNumber(), page.getIds());
+            for (ProductPage productPage : pages) {
+                startCrawling("Local_" + fileName, null, productPage.getPageNumber(), productPage.getIds(), false);
             }
-            
-            // Lưu danh sách pages để sử dụng sau này
-            // Có thể lưu vào một biến instance để sử dụng trong quá trình crawl
-            
         } catch (Exception e) {
             AlertUtil.showError("Error", "Failed to read product IDs file: " + e.getMessage());
             e.printStackTrace();
@@ -828,6 +843,7 @@ public class OldHomePanelController {
             CrawlExecutor.shutdownNow();
             startButton.setText("Listen");
             fetchButton.setDisable(true);
+            syncCache.setDisable(true);
             // Enable clearButton nếu table có data
             if (!crawlTaskList.isEmpty()) {
                 clearButton.setDisable(false);
@@ -873,7 +889,7 @@ public class OldHomePanelController {
         client.connect();
     }
 
-    private void startCrawling(String signature, String linkSheetId, String linkSheetName, String pageNumber, ArrayList<String> listProducts) {
+    private void startCrawling(String signature, String linkSheetId, String pageNumber, ArrayList<String> listProducts, boolean fromRemote) {
         downloadImageLabel.setText("");
         DownloadManager.getInstance().clearData();
 
@@ -918,6 +934,9 @@ public class OldHomePanelController {
             CrawlTaskStatus status = new CrawlTaskStatus(signature, Integer.parseInt(pageNumber), "Waiting");
             crawlTaskMap.put(key, status);
             Platform.runLater(() -> crawlTaskList.add(status));
+            if (fromRemote) {
+                Utils.saveProducts(signature, pageNumber, listProducts);
+            }
         }
 
         try {
@@ -927,10 +946,10 @@ public class OldHomePanelController {
                             inputDataConfig.params,
                             signature,
                             linkSheetId,
-                            linkSheetName,
                             pageNumber,
                             crawlProcessListener,
-                            listProducts
+                            listProducts,
+                            fromRemote
                     )
             );
         } catch (Exception ex) {

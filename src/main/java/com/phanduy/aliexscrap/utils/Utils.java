@@ -7,6 +7,7 @@ package com.phanduy.aliexscrap.utils;
 
 import com.google.gson.Gson;
 import com.phanduy.aliexscrap.config.Configs;
+import com.phanduy.aliexscrap.model.ProductPage;
 import com.phanduy.aliexscrap.model.aliex.AliexOriginalInfo;
 import com.phanduy.aliexscrap.model.aliex.store.BaseStoreInfo;
 import com.phanduy.aliexscrap.model.aliex.store.AliexPageInfo;
@@ -14,11 +15,15 @@ import com.phanduy.aliexscrap.model.aliex.store.AliexStoreCommon;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 
@@ -398,9 +403,122 @@ public class Utils {
     }
 
     public static void writeToFile(String data, String filePath) throws IOException {
-
         FileUtils.writeStringToFile(new File(filePath), data, "UTF-8");
-
     }
 
+    public static void saveProducts(String signature, String pageNumber, ArrayList<String> productIds) {
+        if (StringUtils.isEmpty(signature)) return;
+        if (productIds == null || productIds.isEmpty()) return;
+
+        try {
+            // Tạo thư mục nếu chưa tồn tại
+            File directory = new File(Configs.SIGNATURE_CACHE_PATH);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
+
+            // Tạo đường dẫn file
+            String filePath = Configs.SIGNATURE_CACHE_PATH + Configs.pathChar + signature + "_page" + pageNumber + ".txt";
+
+            // Chuyển ArrayList thành chuỗi, mỗi ID trên một dòng
+            StringBuilder sb = new StringBuilder();
+            for (String productId : productIds) {
+                if (sb.length() > 0) {
+                    sb.append("\n");
+                }
+                sb.append(productId);
+            }
+
+            // Mã hóa dữ liệu trước khi lưu
+            String data = sb.toString();
+//            String encryptedData = EncryptUtil.encrypt(data);
+
+            // Ghi vào file
+            writeToFile(data, filePath);
+
+            System.out.println("Saved " + productIds.size() + " product IDs to " + filePath);
+        } catch (IOException ex) {
+            Logger.getLogger(Utils.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public static void removeSignatureCache(String signature, String pageNumber) {
+        String filePath = Configs.SIGNATURE_CACHE_PATH + Configs.pathChar + signature + "_page" + pageNumber + ".txt";
+        File file = new File(filePath);
+        if (file.exists()) {
+            file.delete();
+        }
+    }
+
+    public static ProductPage loadProducts(String fileName) {
+        try {
+            // Tạo đường dẫn file
+            String filePath = Configs.SIGNATURE_CACHE_PATH + Configs.pathChar + fileName;
+            File file = new File(filePath);
+
+            // Kiểm tra file có tồn tại không
+            if (!file.exists()) {
+                return null;
+            }
+
+            // Đọc dữ liệu từ file
+            String encryptedData = FileUtils.readFileToString(file, "UTF-8");
+            
+            // Giải mã dữ liệu
+//            String decryptedData = EncryptUtil.decrypt(encryptedData);
+            
+            if (StringUtils.isEmpty(encryptedData)) {
+                return null;
+            }
+
+            // Chuyển chuỗi thành ArrayList
+            ProductPage productPage = new ProductPage();
+
+            Pattern pattern = Pattern.compile("(.+?)_page(\\d+)\\.txt");
+            Matcher matcher = pattern.matcher(fileName);
+
+            if (matcher.matches()) {
+                String name = matcher.group(1);
+                int number = Integer.parseInt(matcher.group(2));
+                productPage.setSignature(name);
+                productPage.setPageNumber(number);
+            } else {
+                return null;
+            }
+            ArrayList<String> productIds = new ArrayList<>();
+            String[] lines = encryptedData.split("\n");
+            
+            for (String line : lines) {
+                if (!StringUtils.isEmpty(line.trim())) {
+                    productIds.add(line.trim());
+                }
+            }
+
+            System.out.println("Loaded " + productIds.size() + " product IDs from " + filePath);
+            productPage.setIds(productIds);
+            return productPage;
+
+        } catch (IOException ex) {
+            Logger.getLogger(Utils.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+    }
+
+    public static ArrayList<ProductPage> loadCacheData() {
+        File cacheDir = new File(Configs.SIGNATURE_CACHE_PATH);
+        if (!cacheDir.exists()) return null;
+        File[] files = cacheDir.listFiles();
+        if (files == null || files.length == 0) return null;
+        ArrayList<ProductPage> results = new ArrayList<>();
+        for (File file : files) {
+            if (file.isFile()) {
+                String fileName = file.getName();
+                ProductPage productPage = loadProducts(fileName);
+                if (productPage != null) {
+                    results.add(productPage);
+                }
+            }
+        }
+        return results;
+    }
 }

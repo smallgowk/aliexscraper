@@ -1,9 +1,9 @@
 package com.phanduy.aliexscrap.model;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class ProductPage {
+    private String signature;
     private int pageNumber;
     private ArrayList<String> ids;
     
@@ -13,7 +13,13 @@ public class ProductPage {
         this.pageNumber = pageNumber;
         this.ids = ids;
     }
-    
+
+    public ProductPage(String signature, int pageNumber, ArrayList<String> ids) {
+        this.signature = signature;
+        this.pageNumber = pageNumber;
+        this.ids = ids;
+    }
+
     public String getPageNumber() {
         return String.valueOf(pageNumber);
     }
@@ -29,10 +35,19 @@ public class ProductPage {
     public void setIds(ArrayList<String> ids) {
         this.ids = ids;
     }
-    
+
+    public String getSignature() {
+        return signature;
+    }
+
+    public void setSignature(String signature) {
+        this.signature = signature;
+    }
+
     @Override
     public String toString() {
         return "ProductPage{" +
+                "signature=" + signature +
                 "pageNumber=" + pageNumber +
                 ", ids=" + ids +
                 '}';

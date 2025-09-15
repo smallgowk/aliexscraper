@@ -113,6 +113,9 @@ public class OldHomePanelController {
     @FXML private Region leftSpacer;
     @FXML private Region rightSpacer;
 
+    public static final String START_LABEL = "Start";
+    public static final String STOP_LABEL = "Stop";
+
     private ObservableList<CrawlTaskStatus> crawlTaskList = FXCollections.observableArrayList();
     private Map<String, CrawlTaskStatus> crawlTaskMap = new ConcurrentHashMap<>();
 
@@ -141,6 +144,8 @@ public class OldHomePanelController {
     private Preferences prefs;
 
     WebSocketClient client;
+
+    private boolean isRunning = false;
 
 //    ProcessCrawlRapidNoCrawlThread processCrawlThread;
 
@@ -218,8 +223,19 @@ public class OldHomePanelController {
 
                                     CrawlExecutor.initExecutor(checkInfoResponse.getMaxThreads());
                                     ExportFileExecutor.initExecutor(1);
-                                    startButton.setDisable(false);
-                                    statusLabel.setVisible(false);
+
+                                    try {
+                                        initSocket();
+                                        client.connect();
+                                    } catch (URISyntaxException e) {
+                                        System.out.println("Error" + e.getMessage());
+                                        Platform.runLater(() -> {
+                                            statusLabel.setVisible(true);
+                                            statusLabel.setText("Kết nối server thất bại!");
+                                        });
+                                    }
+
+
                                 }
                             });
                         }
@@ -286,14 +302,11 @@ public class OldHomePanelController {
                 String connectFrame = "CONNECT\naccept-version:1.2\nheart-beat:10000,10000\n\n\u0000";
                 this.send(connectFrame);
                 Platform.runLater(() -> {
-                    startButton.setText("Stop");
-                    fetchButton.setDisable(false);
-                    syncCache.setDisable(false);
-                    statusLabel.setVisible(true);
-                    statusLabel.setText("Chờ nhận tín hiệu từ extension!");
+                    startButton.setDisable(false);
+//                    statusLabel.setVisible(false);
+//                    fetchButton.setDisable(false);
+//                    syncCache.setDisable(false);
                 });
-
-
             }
 
             @Override
@@ -324,7 +337,7 @@ public class OldHomePanelController {
                             JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
                             if (obj.has("action")) {
                                 String action = obj.get("action").getAsString();
-                                if (action.equalsIgnoreCase("CRAWLING")) {
+                                if (action.equalsIgnoreCase("CRAWLING") && isRunning) {
                                     String diskSerialNumber = obj.has("diskSerialNumber") ? obj.get("diskSerialNumber").getAsString() : null;
                                     String signature = obj.has("signature") ? obj.get("signature").getAsString() : null;
                                     String linkSheetId = obj.has("linkSheetId") ? obj.get("linkSheetId").getAsString() : null;
@@ -373,9 +386,11 @@ public class OldHomePanelController {
             @Override
             public void onClose(int code, String reason, boolean remote) {
                 System.out.println("Duyuno Closed: " + reason);
+                isRunning = false;
+                CrawlExecutor.shutdownNow();
                 Platform.runLater(() -> {
-                    startButton.setText("Listen");
-                    statusLabel.setVisible(false);
+                    startButton.setText(START_LABEL);
+                    statusLabel.setText("");
                     fetchButton.setDisable(true);
                     syncCache.setDisable(true);
                 });
@@ -384,8 +399,10 @@ public class OldHomePanelController {
             @Override
             public void onError(Exception ex) {
                 ex.printStackTrace();
+                isRunning = false;
+                CrawlExecutor.shutdownNow();
                 Platform.runLater(() -> {
-                    startButton.setText("Listen");
+                    startButton.setText(START_LABEL);
                     fetchButton.setDisable(true);
                     syncCache.setDisable(true);
                     statusLabel.setVisible(true);
@@ -837,14 +854,26 @@ public class OldHomePanelController {
 
     @FXML
     private void onStart() throws URISyntaxException {
-        if (client != null && client.isOpen()) {
-            client.close();
-            client = null;
-            CrawlExecutor.shutdownNow();
-            startButton.setText("Listen");
+//        if (client != null && client.isOpen()) {
+//            client.close();
+//            client = null;
+//            CrawlExecutor.shutdownNow();
+//            startButton.setText("Listen");
+//            fetchButton.setDisable(true);
+//            syncCache.setDisable(true);
+//            // Enable clearButton nếu table có data
+//            if (!crawlTaskList.isEmpty()) {
+//                clearButton.setDisable(false);
+//            }
+//            return;
+//        }
+        if (isRunning) {
+            isRunning = false;
+            startButton.setText(START_LABEL);
             fetchButton.setDisable(true);
             syncCache.setDisable(true);
-            // Enable clearButton nếu table có data
+            statusLabel.setText("");
+            CrawlExecutor.shutdownNow();
             if (!crawlTaskList.isEmpty()) {
                 clearButton.setDisable(false);
             }
@@ -885,8 +914,15 @@ public class OldHomePanelController {
 
         Configs.TOOL_DATA_PATH = outputField.getText();
         Configs.updateDataPath();
-        initSocket();
-        client.connect();
+
+        startButton.setText(STOP_LABEL);
+        statusLabel.setVisible(true);
+        statusLabel.setText("Chờ nhận tín hiệu từ extension hoặc run local cache!");
+        fetchButton.setDisable(false);
+        syncCache.setDisable(false);
+        isRunning = true;
+//        initSocket();
+//        client.connect();
     }
 
     private void startCrawling(String signature, String linkSheetId, String pageNumber, ArrayList<String> listProducts, boolean fromRemote) {
@@ -986,7 +1022,7 @@ public class OldHomePanelController {
             }
 
             Platform.runLater(() -> {
-                startButton.setText("Listen");
+                startButton.setText(START_LABEL);
                 showInvalidInfo(result);
             });
 

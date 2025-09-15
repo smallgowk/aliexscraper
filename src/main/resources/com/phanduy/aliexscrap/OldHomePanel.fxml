@@ -41,6 +41,16 @@
                             onAction="#onOpenConfigFile"/>
                 </HBox>
 
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Local Products:" minWidth="85"/>
+                    <TextField fx:id="productIdsField" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="browseproductIdsFile" text="Browse..."
+                            onAction="#onBrowserProductIdsFile"/>
+                    <Button text="Open"
+                            onAction="#onOpenProductIdsFile"/>
+
+                </HBox>
+
                 <!-- Output Settings -->
 
                 <HBox spacing="10" alignment="CENTER_LEFT">
@@ -64,32 +74,37 @@
                             onAction="#onOpenOutputFolder"/>
                 </HBox>
 
+
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Cache controller" style="-fx-font-weight: bold;"/>
+                    <Separator HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button fx:id="fetchButton" text="Run Local Product"
+                            onAction="#onFetchProductIdsFile"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="syncCache" text="Run Extension Cache"
+                            onAction="#onSyncCache"/>
+                </HBox>
+
                 <Separator>
                     <VBox.margin>
                         <Insets top="10"/>
                     </VBox.margin>
                 </Separator>
-
+<!--                <HBox spacing="10" alignment="CENTER_LEFT">-->
+<!--                    <Label text="Extension" style="-fx-font-weight: bold;"/>-->
+<!--                    <Separator HBox.hgrow="ALWAYS"/>-->
+<!--                </HBox>-->
                 <HBox spacing="10" alignment="CENTER_LEFT">
-                    <Button fx:id="startButton" text="Listen"
+                    <Button fx:id="startButton" text="Start"
                             onAction="#onStart"/>
                     <Region fx:id="leftSpacer" HBox.hgrow="ALWAYS"/>
                     <Label fx:id="statusLabel" text="" visible="false" style="-fx-text-fill: blue;" alignment="CENTER"/>
                     <Region fx:id="rightSpacer" HBox.hgrow="ALWAYS"/>
-                    <Button fx:id="syncCache" text="Load Cache"
-                            onAction="#onSyncCache"/>
                 </HBox>
 
-                <HBox spacing="10" alignment="CENTER_LEFT">
-                    <Label text="Product Ids:" minWidth="85"/>
-                    <TextField fx:id="productIdsField" HBox.hgrow="ALWAYS"/>
-                    <Button fx:id="browseproductIdsFile" text="Browse..."
-                            onAction="#onBrowserProductIdsFile"/>
-                    <Button text="Open"
-                            onAction="#onOpenProductIdsFile"/>
-                    <Button fx:id="fetchButton" text="Load Data" prefWidth="79.5"
-                            onAction="#onFetchProductIdsFile"/>
-                </HBox>
 
                 <!-- TableView trạng thái crawl -->
                 <TableView fx:id="crawlTable" prefHeight="200" VBox.vgrow="ALWAYS">

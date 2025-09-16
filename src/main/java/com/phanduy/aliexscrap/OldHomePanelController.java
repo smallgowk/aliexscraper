@@ -708,6 +708,17 @@ public class OldHomePanelController {
     private void onSyncCache() {
         ArrayList<ProductPage> pages = Utils.loadCacheData();
         if (pages != null && !pages.isEmpty()) {
+            // Sort by signature first, then by pageNumber
+            pages.sort((p1, p2) -> {
+                // First compare by signature
+                int signatureCompare = p1.getSignature().compareTo(p2.getSignature());
+                if (signatureCompare != 0) {
+                    return signatureCompare;
+                }
+                // If signatures are equal, compare by pageNumber
+                return Integer.compare(p1.getPageNumberInt(), p2.getPageNumberInt());
+            });
+            
             String linkSheetId = prefs.get("linkSheetId", null);
             if (!StringUtils.isEmpty(linkSheetId)) {
                 for (ProductPage productPage : pages) {

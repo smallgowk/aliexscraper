@@ -24,6 +24,10 @@ public class ProductPage {
         return String.valueOf(pageNumber);
     }
     
+    public int getPageNumberInt() {
+        return pageNumber;
+    }
+    
     public void setPageNumber(int pageNumber) {
         this.pageNumber = pageNumber;
     }

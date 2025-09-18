@@ -7,14 +7,18 @@ import java.io.IOException;
 public class FileOpener {
     public static void openFileOrFolder(String path) {
         try {
+            if (path == null || path.trim().isEmpty()) {
+                AlertUtil.showError("", "Đường dẫn không hợp lệ!");
+                return;
+            }
             File file = new File(path);
             if (!file.exists()) {
-                System.err.println("File not found: " + path);
+                AlertUtil.showError("", "File hoặc thư mục không tồn tại!");
                 return;
             }
             Desktop.getDesktop().open(file);
         } catch (IOException e) {
-            e.printStackTrace();
+            AlertUtil.showError("Lỗi", "Không thể mở: " + e.getMessage());
         }
     }
 

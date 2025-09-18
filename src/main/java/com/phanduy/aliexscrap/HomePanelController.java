@@ -163,7 +163,10 @@ public class HomePanelController {
             folderPath = currentPath.substring(0, currentPath.lastIndexOf("\\"));
         }
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setInitialDirectory(new File(folderPath));
+        try {
+            File init = getFallbackInitialDirectory(folderPath);
+            fileChooser.setInitialDirectory(init);
+        } catch (Exception ignore) { }
 
         // Set the title for the FileChooser dialog
         fileChooser.setTitle("Select Excel File");
@@ -194,7 +197,10 @@ public class HomePanelController {
             folderPath = currentPath.substring(0, currentPath.lastIndexOf("\\"));
         }
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setInitialDirectory(new File(folderPath));
+        try {
+            File init = getFallbackInitialDirectory(folderPath);
+            fileChooser.setInitialDirectory(init);
+        } catch (Exception ignore) { }
 
         // Set the title for the FileChooser dialog
         fileChooser.setTitle("Select Excel File");
@@ -241,7 +247,10 @@ public class HomePanelController {
         }
 
         DirectoryChooser directoryChooser = new DirectoryChooser();
-        directoryChooser.setInitialDirectory(new File(folderPath));
+        try {
+            File init = getFallbackInitialDirectory(folderPath);
+            directoryChooser.setInitialDirectory(init);
+        } catch (Exception ignore) { }
 
         // Set the title for the DirectoryChooser dialog
         directoryChooser.setTitle("Select Output Folder");
@@ -258,7 +267,10 @@ public class HomePanelController {
             folderPath = currentPath.substring(0, currentPath.lastIndexOf("\\"));
         }
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setInitialDirectory(new File(folderPath));
+        try {
+            File init = getFallbackInitialDirectory(folderPath);
+            fileChooser.setInitialDirectory(init);
+        } catch (Exception ignore) { }
 
         // Set the title for the FileChooser dialog
         fileChooser.setTitle("Select Excel File");
@@ -306,6 +318,27 @@ public class HomePanelController {
         });
 
         System.out.println("Settings Loaded!");
+    }
+
+    private File getFallbackInitialDirectory(String preferredPath) {
+        ArrayList<String> candidates = new ArrayList<>();
+        if (preferredPath != null && !preferredPath.isEmpty()) {
+            candidates.add(preferredPath);
+        }
+        String userHome = System.getProperty("user.home");
+        candidates.add(userHome + File.separator + "Desktop");
+        candidates.add(userHome + File.separator + "Documents");
+        candidates.add(userHome);
+        for (String p : candidates) {
+            try {
+                if (p == null) continue;
+                File f = new File(p);
+                if (f.exists() && f.isDirectory() && f.canRead()) {
+                    return f;
+                }
+            } catch (SecurityException ignore) { }
+        }
+        return new File(userHome);
     }
 
     @FXML

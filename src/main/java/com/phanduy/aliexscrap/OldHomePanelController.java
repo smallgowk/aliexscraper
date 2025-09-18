@@ -205,7 +205,7 @@ public class OldHomePanelController {
                                             prefs.putBoolean("Latest", checkInfoResponse.isLatest());
                                             prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
                                             showInvalidVersion(
-                                                    "Version app đã quá cũ! Vui lòng cập nhật version mới để sử dụng!",
+                                                    "Vui lòng cập nhật version mới để sử dụng!",
                                                     checkInfoResponse.getLatestVersion()
                                             );
                                             break;

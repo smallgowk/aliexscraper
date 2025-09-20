@@ -2,6 +2,7 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
 <?import javafx.util.Callback?>
 <VBox xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.phanduy.aliexscrap.OldHomePanelController">
@@ -122,6 +123,7 @@
                     <Region HBox.hgrow="ALWAYS"/>
                     <Label fx:id="remainRequestLabel" text="Remain requests: " visible="false" style="-fx-text-fill: blue;"/>
                     <Label fx:id="remainRequest" text="" visible="false" style="-fx-text-fill: blue;"/>
+                    <ImageView fx:id="socketStatusIcon" fitWidth="12" fitHeight="12" preserveRatio="true" smooth="true"/>
                 </HBox>
             </VBox>
         </children>

@@ -41,6 +41,7 @@ module com.phanduy.aliexscrap.aliexscrapper {
     // System
     requires java.prefs;
     requires annotations;
+    requires java.base;
 
     // Logging
     requires log4j;
@@ -50,7 +51,9 @@ module com.phanduy.aliexscrap.aliexscrapper {
     opens com.phanduy.aliexscrap to javafx.fxml, com.google.gson;
     opens com.phanduy.aliexscrap.api to com.google.gson, retrofit2;
     opens com.phanduy.aliexscrap.model.amazon to com.google.gson, retrofit2;
+    opens com.phanduy.aliexscrap.controller to com.google.gson, retrofit2;
     exports com.phanduy.aliexscrap;
+    exports com.phanduy.aliexscrap.controller;
     opens com.phanduy.aliexscrap.model.request to com.google.gson, retrofit2;
     opens com.phanduy.aliexscrap.model.response to com.google.gson, retrofit2;
 }

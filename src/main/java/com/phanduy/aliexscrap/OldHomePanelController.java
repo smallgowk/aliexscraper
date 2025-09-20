@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.phanduy.aliexscrap.config.Configs;
 import com.phanduy.aliexscrap.controller.DownloadManager;
+import com.phanduy.aliexscrap.controller.SocketManager;
 import com.phanduy.aliexscrap.controller.inputprocess.InputDataConfig;
 import com.phanduy.aliexscrap.controller.inputprocess.SnakeReadOrderInfoSvs;
 import com.phanduy.aliexscrap.controller.thread.CrawlExecutor;
@@ -32,6 +33,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.control.Tooltip;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -104,6 +107,7 @@ public class OldHomePanelController {
     @FXML private Label remainRequestLabel;
     @FXML private Label downloadImageLabel;
     @FXML private Label statusLabel;
+    @FXML private ImageView socketStatusIcon;
 
     @FXML private TableView<CrawlTaskStatus> crawlTable;
     @FXML private TableColumn<CrawlTaskStatus, String> signatureCol;
@@ -143,9 +147,12 @@ public class OldHomePanelController {
     // Preferences API để cache setting
     private Preferences prefs;
 
-    WebSocketClient client;
-
+    private SocketManager socketManager;
     private boolean isRunning = false;
+    
+    // Socket status icons - chỉ có 2 trạng thái
+    private static final String ICON_CONNECTED_PATH = "/com/phanduy/aliexscrap/icons/socket_connected.png";
+    private static final String ICON_CONNECTING_PATH = "/com/phanduy/aliexscrap/icons/socket_connecting.png";
 
 //    ProcessCrawlRapidNoCrawlThread processCrawlThread;
 
@@ -161,6 +168,13 @@ public class OldHomePanelController {
 
         loadSettings();
         DownloadManager.getInstance().setListener(downloadListener);
+        
+        // Khởi tạo SocketManager
+        initSocketManager();
+        
+        // Hiển thị trạng thái connecting ngay từ đầu
+        updateSocketStatusIcon();
+        
         startButton.setDisable(true);
         fetchButton.setDisable(true);
         syncCache.setDisable(true);
@@ -177,8 +191,7 @@ public class OldHomePanelController {
                         );
                         if (checkInfoResponse == null) {
                             Platform.runLater(() -> {
-                                statusLabel.setVisible(true);
-                                statusLabel.setText("Kết nối server thất bại!");
+                                updateSocketStatus();
                             });
                         } else {
                             Platform.runLater(() -> {
@@ -225,13 +238,13 @@ public class OldHomePanelController {
                                     ExportFileExecutor.initExecutor(1);
 
                                     try {
-                                        initSocket();
-                                        client.connect();
-                                    } catch (URISyntaxException e) {
+                                        socketManager.connect();
+                                        // Bắt đầu auto reconnect
+                                        socketManager.startAutoReconnect();
+                                    } catch (Exception e) {
                                         System.out.println("Error" + e.getMessage());
                                         Platform.runLater(() -> {
-                                            statusLabel.setVisible(true);
-                                            statusLabel.setText("Kết nối server thất bại!");
+                                            updateSocketStatus();
                                         });
                                     }
 
@@ -243,8 +256,7 @@ public class OldHomePanelController {
                         System.out.println("Error" + e.getMessage());
 //                        showInvalidInfo("Có lỗi xảy ra!");
                         Platform.runLater(() -> {
-                            statusLabel.setVisible(true);
-                            statusLabel.setText("Kết nối server thất bại!");
+                            updateSocketStatus();
                         });
                     }
                 }
@@ -292,125 +304,145 @@ public class OldHomePanelController {
         });
     }
 
-    private void initSocket() throws URISyntaxException {
-        client = new WebSocketClient(new URI(SOCKET_URL)) {
-            private boolean isConnected = false;
+    private void initSocketManager() {
+        socketManager = new SocketManager(SOCKET_URL, new SocketManager.SocketCallback() {
             @Override
-            public void onOpen(ServerHandshake handshakedata) {
-                System.out.println("Duyuno Connected");
-                // Gửi frame CONNECT STOMP
-                String connectFrame = "CONNECT\naccept-version:1.2\nheart-beat:10000,10000\n\n\u0000";
-                this.send(connectFrame);
+            public void onConnectionEstablished() {
+                System.out.println("WebSocket connected successfully");
+                setupWebSocketHandlers();
+                
                 Platform.runLater(() -> {
                     startButton.setDisable(false);
-//                    statusLabel.setVisible(false);
-//                    fetchButton.setDisable(false);
-//                    syncCache.setDisable(false);
+                    updateSocketStatus();
                 });
             }
-
+            
+            @Override
+            public void onConnectionLost() {
+                System.out.println("WebSocket connection lost, attempting to reconnect...");
+                Platform.runLater(() -> {
+                    if (isRunning) {
+                        updateSocketStatus();
+                    }
+                });
+            }
+            
+            @Override
+            public void onReconnectAttempt(int attemptNumber) {
+                System.out.println("Reconnect attempt #" + attemptNumber);
+                Platform.runLater(() -> {
+                    if (isRunning) {
+                        updateSocketStatus();
+                    }
+                });
+            }
+            
+            @Override
+            public void onReconnectFailed(String reason) {
+                System.out.println("Reconnect failed: " + reason);
+                Platform.runLater(() -> {
+                    updateSocketStatus();
+                });
+            }
+            
             @Override
             public void onMessage(String message) {
-                System.out.println("Duyuno Received: " + message);
-                if (message.startsWith("CONNECTED")) {
-                    // Sau khi nhận CONNECTED, gửi SUBSCRIBE tới /topic/messages
-                    String subscribeFrame = "SUBSCRIBE\nid:sub-0\ndestination:/topic/messages\n\n\u0000";
-                    this.send(subscribeFrame);
-
-                    String subscribeBroadcastFrame = "SUBSCRIBE\nid:sub-broadcast\ndestination:/topic/broadcast\n\n\u0000";
-                    this.send(subscribeBroadcastFrame);
-
-                    // Subscribe để nhận response đăng ký
-                    String subscribeRegistrationFrame = "SUBSCRIBE\nid:sub-registration\ndestination:/queue/registration\n\n\u0000";
-                    this.send(subscribeRegistrationFrame);
-
-                    // Gửi đăng ký machine với machineId và linkSheetId
-                    isConnected = true;
-                } else if (message.startsWith("MESSAGE")) {
-                    // Xử lý message thực tế từ topic
-                    System.out.println("Nhận message từ /topic/messages: " + message);
-                    // Bóc tách phần JSON cuối cùng của message
-                    int jsonStart = message.lastIndexOf("\n{\"");
-                    if (jsonStart != -1) {
-                        String json = message.substring(jsonStart + 1).trim();
-                        try {
-                            JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
-                            if (obj.has("action")) {
-                                String action = obj.get("action").getAsString();
-                                if (action.equalsIgnoreCase("CRAWLING") && isRunning) {
-                                    String diskSerialNumber = obj.has("diskSerialNumber") ? obj.get("diskSerialNumber").getAsString() : null;
-                                    String signature = obj.has("signature") ? obj.get("signature").getAsString() : null;
-                                    String linkSheetId = obj.has("linkSheetId") ? obj.get("linkSheetId").getAsString() : null;
-//                                    String linkSheetName = obj.has("linkSheetName") ? obj.get("linkSheetName").getAsString() : null;
-                                    String pageNumber = obj.has("pageNumber") ? obj.get("pageNumber").getAsString() : null;
-                                    ArrayList<String> listProducts = parseListProducts(obj);
-                                    prefs.put("linkSheetId", linkSheetId);
-
-                                    String machineId = ComputerIdentifier.getDiskSerialNumber(); // Thay bằng ID thực tế của máy
-
-                                    String registerFrame = "SEND\ndestination:/app/register\ncontent-type:application/json\n\n" +
-                                            "{\"machineId\":\"" + machineId + "\",\"linkSheetId\":\"" + linkSheetId + "\"}\u0000";
-                                    this.send(registerFrame);
-
-                                    if (ComputerIdentifier.getDiskSerialNumber().equals(diskSerialNumber) && signature != null && pageNumber != null) {
-                                        startCrawling(signature, linkSheetId, pageNumber, listProducts, true);
-                                    }
-                                } else if (action.equalsIgnoreCase("UPDATE_REQUEST")){
-                                    String owner = obj.has("owner") ? obj.get("owner").getAsString() : null;
-                                    if (!StringUtils.isEmpty(owner) && owner.equalsIgnoreCase(prefs.get("owner", null))) {
-                                        String remainRequestValue = obj.has("remainRequest") ? obj.get("remainRequest").getAsString() : null;
-                                        try {
-                                            long value = Long.parseLong(remainRequestValue);
-                                            String current = remainRequest.getText();
-                                            long currentValue = Long.parseLong(current);
-                                            if (currentValue > value) {
-                                                Platform.runLater(() -> {
-                                                            remainRequest.setText(value >= 0 ? remainRequestValue : "0");
-                                                        }
-                                                );
-                                            }
-                                        } catch (NumberFormatException ex) {
-                                            System.out.println(message + ": " + ex.getMessage());
-                                        }
-                                    }
-
-                                }
-                            }
-                        } catch (Exception e) {
-                            System.out.println("Lỗi parse JSON từ message: " + e.getMessage());
-                        }
-                    }
-                }
+                // Xử lý message từ WebSocket
+                handleWebSocketMessage(message);
             }
-
-            @Override
-            public void onClose(int code, String reason, boolean remote) {
-                System.out.println("Duyuno Closed: " + reason);
-                isRunning = false;
-                CrawlExecutor.shutdownNow();
-                Platform.runLater(() -> {
-                    startButton.setText(START_LABEL);
-                    statusLabel.setText("");
-                    fetchButton.setDisable(true);
-                    syncCache.setDisable(true);
-                });
-            }
-
+            
             @Override
             public void onError(Exception ex) {
-                ex.printStackTrace();
-                isRunning = false;
-                CrawlExecutor.shutdownNow();
+                System.err.println("WebSocket error: " + ex.getMessage());
                 Platform.runLater(() -> {
-                    startButton.setText(START_LABEL);
-                    fetchButton.setDisable(true);
-                    syncCache.setDisable(true);
-                    statusLabel.setVisible(true);
-                    statusLabel.setText("" + ex.getMessage());
+                    updateSocketStatus();
                 });
             }
-        };
+        });
     }
+
+    private void setupWebSocketHandlers() {
+        // Gửi frame CONNECT STOMP
+        String connectFrame = "CONNECT\naccept-version:1.2\nheart-beat:10000,10000\n\n\u0000";
+        socketManager.send(connectFrame);
+    }
+    
+    
+    private void handleWebSocketMessage(String message) {
+        System.out.println("Duyuno Received: " + message);
+        if (message.startsWith("CONNECTED")) {
+            // Sau khi nhận CONNECTED, gửi SUBSCRIBE tới /topic/messages
+            String subscribeFrame = "SUBSCRIBE\nid:sub-0\ndestination:/topic/messages\n\n\u0000";
+            socketManager.send(subscribeFrame);
+
+            String subscribeBroadcastFrame = "SUBSCRIBE\nid:sub-broadcast\ndestination:/topic/broadcast\n\n\u0000";
+            socketManager.send(subscribeBroadcastFrame);
+
+            // Subscribe để nhận response đăng ký
+            String subscribeRegistrationFrame = "SUBSCRIBE\nid:sub-registration\ndestination:/queue/registration\n\n\u0000";
+            socketManager.send(subscribeRegistrationFrame);
+
+            // Gửi đăng ký machine với machineId và linkSheetId
+            Platform.runLater(() -> {
+                updateSocketStatus();
+            });
+        } else if (message.startsWith("MESSAGE")) {
+            // Xử lý message thực tế từ topic
+            System.out.println("Nhận message từ /topic/messages: " + message);
+            // Bóc tách phần JSON cuối cùng của message
+            int jsonStart = message.lastIndexOf("\n{\"");
+            if (jsonStart != -1) {
+                String json = message.substring(jsonStart + 1).trim();
+                try {
+                    JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
+                    if (obj.has("action")) {
+                        String action = obj.get("action").getAsString();
+                        if (action.equalsIgnoreCase("CRAWLING") && isRunning) {
+                            String diskSerialNumber = obj.has("diskSerialNumber") ? obj.get("diskSerialNumber").getAsString() : null;
+                            String signature = obj.has("signature") ? obj.get("signature").getAsString() : null;
+                            String linkSheetId = obj.has("linkSheetId") ? obj.get("linkSheetId").getAsString() : null;
+//                                    String linkSheetName = obj.has("linkSheetName") ? obj.get("linkSheetName").getAsString() : null;
+                            String pageNumber = obj.has("pageNumber") ? obj.get("pageNumber").getAsString() : null;
+                            ArrayList<String> listProducts = parseListProducts(obj);
+                            prefs.put("linkSheetId", linkSheetId);
+
+                            String machineId = ComputerIdentifier.getDiskSerialNumber(); // Thay bằng ID thực tế của máy
+
+                            String registerFrame = "SEND\ndestination:/app/register\ncontent-type:application/json\n\n" +
+                                    "{\"machineId\":\"" + machineId + "\",\"linkSheetId\":\"" + linkSheetId + "\"}\u0000";
+                            socketManager.send(registerFrame);
+
+                            if (ComputerIdentifier.getDiskSerialNumber().equals(diskSerialNumber) && signature != null && pageNumber != null) {
+                                startCrawling(signature, linkSheetId, pageNumber, listProducts, true);
+                            }
+                        } else if (action.equalsIgnoreCase("UPDATE_REQUEST")){
+                            String owner = obj.has("owner") ? obj.get("owner").getAsString() : null;
+                            if (!StringUtils.isEmpty(owner) && owner.equalsIgnoreCase(prefs.get("owner", null))) {
+                                String remainRequestValue = obj.has("remainRequest") ? obj.get("remainRequest").getAsString() : null;
+                                try {
+                                    long value = Long.parseLong(remainRequestValue);
+                                    String current = remainRequest.getText();
+                                    long currentValue = Long.parseLong(current);
+                                    if (currentValue > value) {
+                                        Platform.runLater(() -> {
+                                                    remainRequest.setText(value >= 0 ? remainRequestValue : "0");
+                                                }
+                                        );
+                                    }
+                                } catch (NumberFormatException ex) {
+                                    System.out.println(message + ": " + ex.getMessage());
+                                }
+                            }
+
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("Lỗi parse JSON từ message: " + e.getMessage());
+                }
+            }
+        }
+    }
+    
 
     private @Nullable String extractLastJsonObject(String message) {
         if (message == null) return null;
@@ -879,16 +911,91 @@ public class OldHomePanelController {
         System.out.println("Settings Loaded!");
     }
 
-    private void closeSocket() {
-        if (client != null && client.isOpen()) {
-            client.close();
-            client = null;
+    // Method public để đóng socket từ bên ngoài
+    public void closeSocketConnection() {
+        if (socketManager != null) {
+            socketManager.disconnect();
         }
     }
     
-    // Method public để đóng socket từ bên ngoài
-    public void closeSocketConnection() {
-        closeSocket();
+    // Method để bật/tắt auto reconnect
+    public void setAutoReconnect(boolean enabled) {
+        if (socketManager != null) {
+            if (enabled) {
+                socketManager.startAutoReconnect();
+            } else {
+                socketManager.stopAutoReconnect();
+            }
+        }
+    }
+    
+    // Method để kiểm tra trạng thái auto reconnect
+    public boolean isAutoReconnectEnabled() {
+        return socketManager != null && socketManager.isReconnecting();
+    }
+    
+    // Method để lấy thông tin reconnect
+    public String getReconnectStatus() {
+        if (socketManager == null) {
+            return "Socket not initialized";
+        }
+        return socketManager.getConnectionStatus();
+    }
+    
+    // Method để cập nhật socket status trên UI
+    public void updateSocketStatus() {
+        Platform.runLater(() -> {
+            updateSocketStatusIcon();
+        });
+    }
+    
+    // Method để cập nhật icon socket status - chỉ có 2 trạng thái
+    private void updateSocketStatusIcon() {
+        if (socketManager == null) {
+            setSocketStatusIcon(ICON_CONNECTING_PATH, "Socket initializing...");
+            return;
+        }
+        
+        if (socketManager.isConnected()) {
+            setSocketStatusIcon(ICON_CONNECTED_PATH, "Socket connected");
+        } else {
+            // Tất cả các trạng thái khác đều hiển thị connecting
+            String tooltip = "Socket connecting...";
+            if (socketManager.isReconnecting()) {
+                tooltip = "Socket reconnecting... (attempt " + socketManager.getReconnectAttempts() + ")";
+            }
+            setSocketStatusIcon(ICON_CONNECTING_PATH, tooltip);
+        }
+    }
+    
+    // Method để set icon và tooltip
+    private void setSocketStatusIcon(String iconPath, String tooltip) {
+        try {
+            // Load image từ resources
+            Image image = new Image(getClass().getResourceAsStream(iconPath));
+            socketStatusIcon.setImage(image);
+            socketStatusIcon.setFitWidth(12);
+            socketStatusIcon.setFitHeight(12);
+            socketStatusIcon.setPreserveRatio(true);
+            socketStatusIcon.setSmooth(true);
+            
+            // Set tooltip
+            Tooltip.install(socketStatusIcon, new Tooltip(tooltip));
+            
+        } catch (Exception e) {
+            System.err.println("Error loading icon: " + iconPath + " - " + e.getMessage());
+            // Fallback: sử dụng text nếu không load được icon
+            socketStatusIcon.setImage(null);
+            // Tạm thời sử dụng text fallback
+            System.out.println("Using text fallback for socket status: " + tooltip);
+        }
+    }
+    
+    // Method để force reset reconnecting flag (for debugging)
+    public void forceResetReconnecting() {
+        if (socketManager != null) {
+            socketManager.forceResetReconnecting();
+        }
     }
     
     // Method static để lấy instance hiện tại
@@ -916,8 +1023,14 @@ public class OldHomePanelController {
             startButton.setText(START_LABEL);
             fetchButton.setDisable(true);
             syncCache.setDisable(true);
-            statusLabel.setText("");
+            updateSocketStatus();
             CrawlExecutor.shutdownNow();
+            
+            // Dừng auto reconnect khi stop
+            if (socketManager != null) {
+                socketManager.stopAutoReconnect();
+            }
+            
             if (!crawlTaskList.isEmpty()) {
                 clearButton.setDisable(false);
             }
@@ -962,9 +1075,13 @@ public class OldHomePanelController {
         startButton.setText(STOP_LABEL);
         statusLabel.setVisible(true);
         statusLabel.setText("Chờ nhận tín hiệu từ extension hoặc run local cache!");
+        updateSocketStatus();
         fetchButton.setDisable(false);
         syncCache.setDisable(false);
         isRunning = true;
+        
+        // Bật auto reconnect khi start
+        setAutoReconnect(true);
 //        initSocket();
 //        client.connect();
     }
@@ -1059,9 +1176,8 @@ public class OldHomePanelController {
 
         @Override
         public void onStop(String result) {
-            if (client != null && client.isOpen()) {
-                client.close();
-                client = null;
+            if (socketManager != null) {
+                socketManager.disconnect();
                 CrawlExecutor.shutdownNow();
             }
 

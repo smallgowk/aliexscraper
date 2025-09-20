@@ -149,6 +149,8 @@ public class OldHomePanelController {
 
     private SocketManager socketManager;
     private boolean isRunning = false;
+    private boolean isFirstConnection = true; // Flag để phân biệt kết nối lần đầu và reconnect
+    private SocketManager.SocketCallback socketCallback; // Lưu reference để có thể unregister
     
     // Socket status icons - chỉ có 2 trạng thái
     private static final String ICON_CONNECTED_PATH = "/com/phanduy/aliexscrap/icons/socket_connected.png";
@@ -175,92 +177,22 @@ public class OldHomePanelController {
         // Hiển thị trạng thái connecting ngay từ đầu
         updateSocketStatusIcon();
         
+        // Bắt đầu auto reconnect ngay khi khởi tạo app
+        socketManager.startAutoReconnect();
+        
+        // Thử kết nối ngay lập tức
+        try {
+            socketManager.connect();
+        } catch (Exception e) {
+            System.err.println("Initial connection failed, will retry: " + e.getMessage());
+        }
+        
         startButton.setDisable(true);
         fetchButton.setDisable(true);
         syncCache.setDisable(true);
         clearButton.setDisable(true);
-        ThreadManager.getInstance().submitTask(
-                () -> {
-                    try {
-                        CheckInfoResponse checkInfoResponse = ApiCall.getInstance().checkInfo(
-                                new CheckInfoReq(
-                                        version,
-                                        ComputerIdentifier.getDiskSerialNumber(),
-                                        "newpltool"
-                                )
-                        );
-                        if (checkInfoResponse == null) {
-                            Platform.runLater(() -> {
-                                updateSocketStatus();
-                            });
-                        } else {
-                            Platform.runLater(() -> {
-                                int code = checkInfoResponse.getResultCode();
-                                if (code != 1) {
-                                    switch (code) {
-                                        case CheckInfoResponse.SERIAL_INVALID:
-                                            statusLabel.setVisible(true);
-                                            statusLabel.setText("Máy tính cài đặt không hợp lệ. Liên hệ 0972071089 để được xác thực!");
-                                            break;
-                                        case CheckInfoResponse.TIME_LIMIT:
-                                            statusLabel.setVisible(true);
-                                            statusLabel.setText("Máy tính đã hết thời gian sử dụng. Liên hệ 0972071089 để được xử lý!");
-                                            break;
-                                        case CheckInfoResponse.PRODUCT_LIMIT:
-                                            statusLabel.setVisible(true);
-                                            statusLabel.setText("Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
-                                            break;
-                                        case CheckInfoResponse.PRODUCT_LIMIT_IN_DAY:
-                                            statusLabel.setVisible(true);
-                                            statusLabel.setText("Quá hạn request cho một ngày!");
-                                            break;
-                                        case CheckInfoResponse.VERSION_INVALID:
-                                            prefs.putBoolean("Latest", checkInfoResponse.isLatest());
-                                            prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
-                                            showInvalidVersion(
-                                                    "Vui lòng cập nhật version mới để sử dụng!",
-                                                    checkInfoResponse.getLatestVersion()
-                                            );
-                                            break;
-                                        default:
-                                            showInvalidInfo("Server error!. Liên hệ 0972071089 để được xử lý!");
-                                    }
-                                } else {
-                                    prefs.putBoolean("Latest", checkInfoResponse.isLatest());
-                                    prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
-                                    prefs.put("owner", checkInfoResponse.getOwner());
-
-                                    remainRequest.setText("" + checkInfoResponse.getRemainRequest());
-                                    remainRequest.setVisible(true);
-                                    remainRequestLabel.setVisible(true);
-
-                                    CrawlExecutor.initExecutor(checkInfoResponse.getMaxThreads());
-                                    ExportFileExecutor.initExecutor(1);
-
-                                    try {
-                                        socketManager.connect();
-                                        // Bắt đầu auto reconnect
-                                        socketManager.startAutoReconnect();
-                                    } catch (Exception e) {
-                                        System.out.println("Error" + e.getMessage());
-                                        Platform.runLater(() -> {
-                                            updateSocketStatus();
-                                        });
-                                    }
-
-
-                                }
-                            });
-                        }
-                    } catch (Exception e) {
-                        System.out.println("Error" + e.getMessage());
-//                        showInvalidInfo("Có lỗi xảy ra!");
-                        Platform.runLater(() -> {
-                            updateSocketStatus();
-                        });
-                    }
-                }
-        );
+        // Gọi check info lần đầu
+        checkInfoAndSetup();
 
         // --- WebSocket STOMP logic ---
 
@@ -305,7 +237,8 @@ public class OldHomePanelController {
     }
 
     private void initSocketManager() {
-        socketManager = new SocketManager(SOCKET_URL, new SocketManager.SocketCallback() {
+        socketManager = SocketManager.getInstance(SOCKET_URL);
+        socketCallback = new SocketManager.SocketCallback() {
             @Override
             public void onConnectionEstablished() {
                 System.out.println("WebSocket connected successfully");
@@ -314,7 +247,19 @@ public class OldHomePanelController {
                 Platform.runLater(() -> {
                     startButton.setDisable(false);
                     updateSocketStatus();
+                    
+                    // Nếu đang chạy tool và không phải kết nối lần đầu, clear tasks và reload cache
+                    if (!isFirstConnection) {
+                        clearTasksAndReloadCache();
+                    }
+                    
+                    // Đánh dấu đã kết nối lần đầu
+                    isFirstConnection = false;
                 });
+                
+                // Gọi lại check info mỗi khi reconnect thành công
+                System.out.println("Reconnect successful, checking info again...");
+                checkInfoAndSetup();
             }
             
             @Override
@@ -358,19 +303,137 @@ public class OldHomePanelController {
                     updateSocketStatus();
                 });
             }
+        };
+        socketManager.registerCallback(socketCallback);
+    }
+    
+    /**
+     * Cleanup khi controller bị destroy
+     */
+    public void cleanup() {
+        if (socketManager != null && socketCallback != null) {
+            socketManager.unregisterCallback(socketCallback);
+        }
+    }
+    
+    /**
+     * Check info và setup ứng dụng
+     */
+    private void checkInfoAndSetup() {
+        ThreadManager.getInstance().submitTask(() -> {
+            try {
+                String version = VersionUtils.getAppVersionFromResource();
+                CheckInfoResponse checkInfoResponse = ApiCall.getInstance().checkInfo(
+                        new CheckInfoReq(
+                                version,
+                                ComputerIdentifier.getDiskSerialNumber(),
+                                "newpltool"
+                        )
+                );
+                
+                if (checkInfoResponse == null) {
+                    Platform.runLater(() -> {
+                        updateSocketStatus();
+                    });
+                } else {
+                    Platform.runLater(() -> {
+                        int code = checkInfoResponse.getResultCode();
+                        if (code != 1) {
+                            switch (code) {
+                                case CheckInfoResponse.SERIAL_INVALID:
+                                    statusLabel.setVisible(true);
+                                    statusLabel.setText("Máy tính cài đặt không hợp lệ. Liên hệ 0972071089 để được xác thực!");
+                                    break;
+                                case CheckInfoResponse.TIME_LIMIT:
+                                    statusLabel.setVisible(true);
+                                    statusLabel.setText("Máy tính đã hết thời gian sử dụng. Liên hệ 0972071089 để được xử lý!");
+                                    break;
+                                case CheckInfoResponse.PRODUCT_LIMIT:
+                                    statusLabel.setVisible(true);
+                                    statusLabel.setText("Gói sử dụng đã hết lưu lượng sử dụng. Liên hệ 0972071089 để được xử lý!");
+                                    break;
+                                case CheckInfoResponse.PRODUCT_LIMIT_IN_DAY:
+                                    statusLabel.setVisible(true);
+                                    statusLabel.setText("Quá hạn request cho một ngày!");
+                                    break;
+                                case CheckInfoResponse.VERSION_INVALID:
+                                    prefs.putBoolean("Latest", checkInfoResponse.isLatest());
+                                    prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
+                                    showInvalidVersion(
+                                            "Vui lòng cập nhật version mới để sử dụng!",
+                                            checkInfoResponse.getLatestVersion()
+                                    );
+                                    break;
+                                default:
+                                    showInvalidInfo("Server error!. Liên hệ 0972071089 để được xử lý!");
+                            }
+                        } else {
+                            // Cập nhật thông tin thành công
+                            updateAppInfo(checkInfoResponse);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                System.out.println("Error checking info: " + e.getMessage());
+                Platform.runLater(() -> {
+                    updateSocketStatus();
+                });
+            }
         });
+    }
+    
+    /**
+     * Cập nhật thông tin ứng dụng từ check info response
+     */
+    private void updateAppInfo(CheckInfoResponse checkInfoResponse) {
+        prefs.putBoolean("Latest", checkInfoResponse.isLatest());
+        prefs.put("LatestVersion", checkInfoResponse.getLatestVersion());
+        prefs.put("owner", checkInfoResponse.getOwner());
+
+        remainRequest.setText("" + checkInfoResponse.getRemainRequest());
+        remainRequest.setVisible(true);
+        remainRequestLabel.setVisible(true);
+
+        CrawlExecutor.initExecutor(checkInfoResponse.getMaxThreads());
+        ExportFileExecutor.initExecutor(1);
+        
+        System.out.println("App info updated: remainRequest=" + checkInfoResponse.getRemainRequest() + 
+                          ", owner=" + checkInfoResponse.getOwner());
     }
 
     private void setupWebSocketHandlers() {
-        // Gửi frame CONNECT STOMP
-        String connectFrame = "CONNECT\naccept-version:1.2\nheart-beat:10000,10000\n\n\u0000";
-        socketManager.send(connectFrame);
+        // Gửi frame CONNECT STOMP với delay để đảm bảo WebSocket sẵn sàng
+        ThreadManager.getInstance().submitTask(() -> {
+            try {
+                Thread.sleep(500); // Delay 500ms để WebSocket sẵn sàng
+                
+                // Kiểm tra WebSocket có sẵn sàng không
+                if (socketManager.isConnected()) {
+                    String connectFrame = "CONNECT\naccept-version:1.2\nheart-beat:10000,10000\n\n\u0000";
+                    socketManager.send(connectFrame);
+                    System.out.println("STOMP CONNECT frame sent after reconnect");
+                } else {
+                    System.err.println("WebSocket not ready, retrying in 1 second...");
+                    Thread.sleep(1000);
+                    if (socketManager.isConnected()) {
+                        String connectFrame = "CONNECT\naccept-version:1.2\nheart-beat:10000,10000\n\n\u0000";
+                        socketManager.send(connectFrame);
+                        System.out.println("STOMP CONNECT frame sent after retry");
+                    } else {
+                        System.err.println("WebSocket still not ready after retry");
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Error sending STOMP CONNECT frame: " + e.getMessage());
+            }
+        });
     }
     
     
     private void handleWebSocketMessage(String message) {
         System.out.println("Duyuno Received: " + message);
         if (message.startsWith("CONNECTED")) {
+            System.out.println("Received CONNECTED frame, setting up subscriptions...");
             // Sau khi nhận CONNECTED, gửi SUBSCRIBE tới /topic/messages
             String subscribeFrame = "SUBSCRIBE\nid:sub-0\ndestination:/topic/messages\n\n\u0000";
             socketManager.send(subscribeFrame);
@@ -389,6 +452,7 @@ public class OldHomePanelController {
         } else if (message.startsWith("MESSAGE")) {
             // Xử lý message thực tế từ topic
             System.out.println("Nhận message từ /topic/messages: " + message);
+            System.out.println("Processing MESSAGE frame...");
             // Bóc tách phần JSON cuối cùng của message
             int jsonStart = message.lastIndexOf("\n{\"");
             if (jsonStart != -1) {
@@ -417,6 +481,7 @@ public class OldHomePanelController {
                             }
                         } else if (action.equalsIgnoreCase("UPDATE_REQUEST")){
                             String owner = obj.has("owner") ? obj.get("owner").getAsString() : null;
+                            System.out.println("Owner: " + owner);
                             if (!StringUtils.isEmpty(owner) && owner.equalsIgnoreCase(prefs.get("owner", null))) {
                                 String remainRequestValue = obj.has("remainRequest") ? obj.get("remainRequest").getAsString() : null;
                                 try {
@@ -624,6 +689,64 @@ public class OldHomePanelController {
         crawlTaskMap.clear();
         clearButton.setDisable(true);
         CrawlExecutor.shutdownNow();
+    }
+    
+    /**
+     * Clear các task không phải Done và load lại extension cache
+     * Được gọi khi socket reconnect thành công
+     */
+    private void clearTasksAndReloadCache() {
+        Platform.runLater(() -> {
+            if (!crawlTaskList.isEmpty()) {
+                // Clear các task không phải Done
+                crawlTaskList.removeIf(task -> !"Done".equals(task.getProgress()));
+
+                // Clear map tương ứng
+                crawlTaskMap.entrySet().removeIf(entry -> !"Done".equals(entry.getValue().getProgress()));
+
+                // Update clearButton state
+                if (crawlTaskList.isEmpty()) {
+                    clearButton.setDisable(true);
+                }
+
+                // Load lại extension cache
+                onSyncCache();
+
+                System.out.println("Cleared non-Done tasks and reloaded extension cache after reconnect");
+            }
+        });
+    }
+    
+    /**
+     * Load extension cache data
+     */
+    private void loadExtensionCache() {
+        try {
+            ArrayList<ProductPage> pages = Utils.loadCacheData();
+            if (pages != null && !pages.isEmpty()) {
+                // Sort by signature first, then by pageNumber
+                pages.sort((p1, p2) -> {
+                    // First compare by signature
+                    int signatureCompare = p1.getSignature().compareTo(p2.getSignature());
+                    if (signatureCompare != 0) {
+                        return signatureCompare;
+                    }
+                    // If signatures are equal, compare by pageNumber
+                    return Integer.compare(Integer.parseInt(p1.getPageNumber()), Integer.parseInt(p2.getPageNumber()));
+                });
+                
+                // Add to table
+                for (ProductPage page : pages) {
+                    CrawlTaskStatus status = new CrawlTaskStatus(page.getSignature(), Integer.parseInt(page.getPageNumber()), "Done");
+                    crawlTaskMap.put(page.getSignature() + "_" + page.getPageNumber(), status);
+                    crawlTaskList.add(status);
+                }
+                
+                System.out.println("Loaded " + pages.size() + " cached pages from extension");
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading extension cache: " + e.getMessage());
+        }
     }
 
     @FXML
@@ -953,17 +1076,23 @@ public class OldHomePanelController {
     private void updateSocketStatusIcon() {
         if (socketManager == null) {
             setSocketStatusIcon(ICON_CONNECTING_PATH, "Socket initializing...");
+            statusLabel.setText("Đang mất kết nối không thể nhận tín hiệu từ extension!");
+            statusLabel.setStyle("-fx-text-fill: orange;"); // Màu cam cho connecting
             return;
         }
         
         if (socketManager.isConnected()) {
             setSocketStatusIcon(ICON_CONNECTED_PATH, "Socket connected");
+            statusLabel.setText("Chờ nhận tín hiệu từ extension hoặc run local cache!");
+            statusLabel.setStyle("-fx-text-fill: blue;"); // Màu xanh cho connected
         } else {
             // Tất cả các trạng thái khác đều hiển thị connecting
             String tooltip = "Socket connecting...";
             if (socketManager.isReconnecting()) {
                 tooltip = "Socket reconnecting... (attempt " + socketManager.getReconnectAttempts() + ")";
             }
+            statusLabel.setText("Đang mất kết nối không thể nhận tín hiệu từ extension!");
+            statusLabel.setStyle("-fx-text-fill: orange;"); // Màu cam cho connecting
             setSocketStatusIcon(ICON_CONNECTING_PATH, tooltip);
         }
     }
@@ -981,7 +1110,7 @@ public class OldHomePanelController {
             
             // Set tooltip
             Tooltip.install(socketStatusIcon, new Tooltip(tooltip));
-            
+
         } catch (Exception e) {
             System.err.println("Error loading icon: " + iconPath + " - " + e.getMessage());
             // Fallback: sử dụng text nếu không load được icon

@@ -6,6 +6,7 @@
 package com.phanduy.aliexscrap.controller.thread;
 
 import com.phanduy.aliexscrap.config.Configs;
+import com.phanduy.aliexscrap.controller.SocketManager;
 import com.phanduy.aliexscrap.interfaces.CrawlProcessListener;
 import com.phanduy.aliexscrap.model.aliex.store.AliexPageInfo;
 import com.phanduy.aliexscrap.model.aliex.store.AliexStoreInfo;
@@ -115,7 +116,7 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
             if (configInfo == null) {
                 isStop = true;
 //                DialogUtil.showInfoMessage(null, "Lỗi hệ thống! Vui lòng kiểm tra kết nối mạng hoặc báo người quản trị!");
-                crawlProcessListener.onPushState(signature, pageNumber, "Error");
+                crawlProcessListener.onPushState(signature, pageNumber, "Disconnect");
                 return;
             }
 
@@ -237,14 +238,16 @@ public class ProcessCrawlRapidNoCrawlThread extends Thread {
         HashMap<String, RapidStoreSeller> hashMapStore = new HashMap<>();
 
         for (int j = 0; j < size; j++) {
-            if (isStop || CrawlExecutor.isStop) {
+            if (isStop || CrawlExecutor.isStop || !SocketManager.getInstance().isConnected()) {
+                String updateStatus = !SocketManager.getInstance().isConnected() ? "Disconnect" : "Stop";
                 crawlProcessListener.onPushState(
                         signature,
                         pageNumber,
-                        "Stop"
+                        updateStatus
                 );
                 return false;
             }
+
             String productId = items.get(j);
             TransformCrawlResponse res = CacheSvs.getInstance().getProductResFromCache(productId, keyCache);
             if (res == null) {

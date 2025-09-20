@@ -6,6 +6,8 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -13,14 +15,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Quản lý WebSocket connection và auto reconnect
+ * Quản lý WebSocket connection và auto reconnect - Singleton pattern
  */
 public class SocketManager {
+    private static volatile SocketManager instance;
+    private static final Object lock = new Object();
     private static final int RECONNECT_INTERVAL_SECONDS = 2;
     private static final int MAX_RECONNECT_ATTEMPTS = -1; // -1 = unlimited
     
     private final String socketUrl;
-    private final SocketCallback callback;
+    private final List<SocketCallback> callbacks = new ArrayList<>();
     private final AtomicBoolean isReconnecting = new AtomicBoolean(false);
     private final AtomicBoolean shouldReconnect = new AtomicBoolean(false);
     private final AtomicBoolean isConnected = new AtomicBoolean(false);
@@ -38,9 +42,71 @@ public class SocketManager {
         void onError(Exception ex);
     }
     
-    public SocketManager(String socketUrl, SocketCallback callback) {
+    private SocketManager(String socketUrl) {
         this.socketUrl = socketUrl;
-        this.callback = callback;
+    }
+    
+    /**
+     * Lấy instance của SocketManager (Singleton)
+     */
+    public static SocketManager getInstance() {
+        if (instance == null) {
+            synchronized (lock) {
+                if (instance == null) {
+                    instance = new SocketManager("ws://localhost:8080/websocket");
+                }
+            }
+        }
+        return instance;
+    }
+    
+    /**
+     * Lấy instance với custom URL
+     */
+    public static SocketManager getInstance(String socketUrl) {
+        if (instance == null) {
+            synchronized (lock) {
+                if (instance == null) {
+                    instance = new SocketManager(socketUrl);
+                }
+            }
+        }
+        return instance;
+    }
+    
+    /**
+     * Đăng ký callback để nhận thông báo từ socket
+     */
+    public void registerCallback(SocketCallback callback) {
+        synchronized (callbacks) {
+            if (!callbacks.contains(callback)) {
+                callbacks.add(callback);
+            }
+        }
+    }
+    
+    /**
+     * Hủy đăng ký callback
+     */
+    public void unregisterCallback(SocketCallback callback) {
+        synchronized (callbacks) {
+            callbacks.remove(callback);
+        }
+    }
+    
+    /**
+     * Gửi thông báo đến tất cả callbacks
+     */
+    private void notifyCallbacks(Runnable callbackAction) {
+        synchronized (callbacks) {
+            for (SocketCallback callback : callbacks) {
+                try {
+                    callbackAction.run();
+                } catch (Exception e) {
+                    System.err.println("Error notifying callback: " + e.getMessage());
+                }
+            }
+        }
     }
     
     /**
@@ -148,12 +214,20 @@ public class SocketManager {
             public void onOpen(ServerHandshake handshakedata) {
                 System.out.println("WebSocket Connected");
                 markConnected();
-                Platform.runLater(() -> callback.onConnectionEstablished());
+                Platform.runLater(() -> notifyCallbacks(() -> {
+                    for (SocketCallback callback : callbacks) {
+                        callback.onConnectionEstablished();
+                    }
+                }));
             }
             
             @Override
             public void onMessage(String message) {
-                Platform.runLater(() -> callback.onMessage(message));
+                Platform.runLater(() -> notifyCallbacks(() -> {
+                    for (SocketCallback callback : callbacks) {
+                        callback.onMessage(message);
+                    }
+                }));
             }
             
             @Override
@@ -162,13 +236,21 @@ public class SocketManager {
                 // Reset reconnecting flag trước khi mark disconnected
                 isReconnecting.set(false);
                 markDisconnected();
-                Platform.runLater(() -> callback.onConnectionLost());
+                Platform.runLater(() -> notifyCallbacks(() -> {
+                    for (SocketCallback callback : callbacks) {
+                        callback.onConnectionLost();
+                    }
+                }));
             }
             
             @Override
             public void onError(Exception ex) {
                 System.err.println("WebSocket Error: " + ex.getMessage());
-                Platform.runLater(() -> callback.onError(ex));
+                Platform.runLater(() -> notifyCallbacks(() -> {
+                    for (SocketCallback callback : callbacks) {
+                        callback.onError(ex);
+                    }
+                }));
                 
                 // Đóng client hiện tại nếu còn mở
                 if (client != null && client.isOpen()) {
@@ -216,11 +298,19 @@ public class SocketManager {
             shouldReconnect.set(false);
             isReconnecting.set(false);
             System.out.println("Max reconnect attempts reached, stopping");
-            Platform.runLater(() -> callback.onReconnectFailed("Đã vượt quá số lần thử kết nối tối đa"));
+            Platform.runLater(() -> notifyCallbacks(() -> {
+                for (SocketCallback callback : callbacks) {
+                    callback.onReconnectFailed("Đã vượt quá số lần thử kết nối tối đa");
+                }
+            }));
             return;
         }
         
-        Platform.runLater(() -> callback.onReconnectAttempt(attempt));
+        Platform.runLater(() -> notifyCallbacks(() -> {
+            for (SocketCallback callback : callbacks) {
+                callback.onReconnectAttempt(attempt);
+            }
+        }));
         
         try {
             // Đóng client cũ nếu còn mở

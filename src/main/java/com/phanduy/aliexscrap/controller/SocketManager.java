@@ -32,6 +32,7 @@ public class SocketManager {
     
     private ScheduledExecutorService reconnectScheduler;
     private WebSocketClient client;
+    private NetworkMonitor networkMonitor;
     
     public interface SocketCallback {
         void onConnectionEstablished();
@@ -44,6 +45,36 @@ public class SocketManager {
     
     private SocketManager(String socketUrl) {
         this.socketUrl = socketUrl;
+        initNetworkMonitor();
+    }
+    
+    /**
+     * Khởi tạo NetworkMonitor
+     */
+    private void initNetworkMonitor() {
+        networkMonitor = NetworkMonitor.getInstance();
+        networkMonitor.startMonitoring(new NetworkMonitor.NetworkCallback() {
+            @Override
+            public void onNetworkLost() {
+                System.out.println("Network lost detected, closing socket immediately");
+                // Đóng socket ngay lập tức khi mất mạng
+                disconnect();
+            }
+            
+            @Override
+            public void onNetworkRestored() {
+                System.out.println("Network restored, reinitializing connection");
+                // Khởi tạo lại kết nối khi có mạng trở lại
+                if (shouldReconnect.get()) {
+                    try {
+                        connect();
+                        startAutoReconnect();
+                    } catch (Exception e) {
+                        System.err.println("Error reinitializing connection: " + e.getMessage());
+                    }
+                }
+            }
+        });
     }
     
     /**
@@ -172,6 +203,18 @@ public class SocketManager {
         }
         client = null;
         isConnected.set(false);
+    }
+    
+    /**
+     * Dừng tất cả monitoring và cleanup
+     */
+    public void shutdown() {
+        stopAutoReconnect();
+        disconnect();
+        
+        if (networkMonitor != null) {
+            networkMonitor.stopMonitoring();
+        }
     }
     
     /**

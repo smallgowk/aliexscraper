@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.phanduy.aliexscrap.config.Configs;
 import com.phanduy.aliexscrap.controller.DownloadManager;
 import com.phanduy.aliexscrap.controller.SocketManager;
+import com.phanduy.aliexscrap.controller.NetworkMonitor;
 import com.phanduy.aliexscrap.controller.inputprocess.InputDataConfig;
 import com.phanduy.aliexscrap.controller.inputprocess.SnakeReadOrderInfoSvs;
 import com.phanduy.aliexscrap.controller.thread.CrawlExecutor;
@@ -151,10 +152,12 @@ public class OldHomePanelController {
     private boolean isRunning = false;
     private boolean isFirstConnection = true; // Flag để phân biệt kết nối lần đầu và reconnect
     private SocketManager.SocketCallback socketCallback; // Lưu reference để có thể unregister
+    private boolean isNetworkAvailable = true; // Trạng thái mạng
     
-    // Socket status icons - chỉ có 2 trạng thái
+    // Socket status icons - có 3 trạng thái
     private static final String ICON_CONNECTED_PATH = "/com/phanduy/aliexscrap/icons/socket_connected.png";
     private static final String ICON_CONNECTING_PATH = "/com/phanduy/aliexscrap/icons/socket_connecting.png";
+    private static final String ICON_ERROR_PATH = "/com/phanduy/aliexscrap/icons/socket_error.png";
 
 //    ProcessCrawlRapidNoCrawlThread processCrawlThread;
 
@@ -238,6 +241,24 @@ public class OldHomePanelController {
 
     private void initSocketManager() {
         socketManager = SocketManager.getInstance(SOCKET_URL);
+        
+        // Khởi tạo NetworkMonitor để lắng nghe sự kiện mất mạng
+        NetworkMonitor networkMonitor = NetworkMonitor.getInstance();
+        System.out.println("Starting network monitoring...");
+        networkMonitor.startMonitoring(new NetworkMonitor.NetworkCallback() {
+            @Override
+            public void onNetworkLost() {
+                System.out.println("NetworkMonitor callback: Network lost");
+                onNetworkLostProcess();
+            }
+            
+            @Override
+            public void onNetworkRestored() {
+                System.out.println("NetworkMonitor callback: Network restored");
+                onNetworkRestoredProcess();
+            }
+        });
+        
         socketCallback = new SocketManager.SocketCallback() {
             @Override
             public void onConnectionEstablished() {
@@ -313,7 +334,43 @@ public class OldHomePanelController {
     public void cleanup() {
         if (socketManager != null && socketCallback != null) {
             socketManager.unregisterCallback(socketCallback);
+            socketManager.shutdown();
         }
+    }
+    
+    /**
+     * Cập nhật trạng thái mạng
+     */
+    private void updateNetworkStatus(boolean available) {
+        System.out.println("updateNetworkStatus called: " + available);
+        isNetworkAvailable = available;
+        System.out.println("isNetworkAvailable set to: " + isNetworkAvailable);
+        Platform.runLater(() -> {
+            System.out.println("Platform.runLater in updateNetworkStatus executed");
+            updateSocketStatusIcon();
+        });
+    }
+    
+    /**
+     * Xử lý khi mất mạng
+     */
+    private void onNetworkLostProcess() {
+        System.out.println("=== Network lost - updating UI ===");
+        System.out.println("Current isNetworkAvailable: " + isNetworkAvailable);
+        System.out.println("Thread: " + Thread.currentThread().getName());
+        updateNetworkStatus(false);
+        System.out.println("After update isNetworkAvailable: " + isNetworkAvailable);
+        System.out.println("UI update completed");
+    }
+    
+    /**
+     * Xử lý khi mạng khôi phục
+     */
+    private void onNetworkRestoredProcess() {
+        System.out.println("=== Network restored - updating UI ===");
+        System.out.println("Current isNetworkAvailable: " + isNetworkAvailable);
+        updateNetworkStatus(true);
+        System.out.println("After update isNetworkAvailable: " + isNetworkAvailable);
     }
     
     /**
@@ -1074,10 +1131,22 @@ public class OldHomePanelController {
     
     // Method để cập nhật icon socket status - chỉ có 2 trạng thái
     private void updateSocketStatusIcon() {
+        System.out.println("updateSocketStatusIcon called - isNetworkAvailable: " + isNetworkAvailable + ", socketManager: " + (socketManager != null));
+        
         if (socketManager == null) {
+            System.out.println("Socket manager is null, showing connecting status");
             setSocketStatusIcon(ICON_CONNECTING_PATH, "Socket initializing...");
             statusLabel.setText("Đang mất kết nối không thể nhận tín hiệu từ extension!");
             statusLabel.setStyle("-fx-text-fill: orange;"); // Màu cam cho connecting
+            return;
+        }
+        
+        // Kiểm tra trạng thái mạng trước
+        if (!isNetworkAvailable) {
+            System.out.println("Network not available, showing error status");
+            setSocketStatusIcon(ICON_ERROR_PATH, "No network connection");
+            statusLabel.setText("Mất kết nối mạng!");
+            statusLabel.setStyle("-fx-text-fill: red;"); // Màu đỏ cho mất mạng
             return;
         }
         
